@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="glass-card auth-card animate-fade-in-up">
+                    <div class="auth-header text-center">
+                        <div class="auth-icon">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                        </div>
+                        <h2 class="auth-title">Welcome Back</h2>
+                        <p class="auth-subtitle">Sign in to your account</p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">{{ form.email.label.text }}</label>
+                            {{ form.email(class="form-control glass-input" + (" is-invalid" if form.email.errors else ""), id="email") }}
+                            {% for error in form.email.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">{{ form.password.label.text }}</label>
+                            <div class="input-group">
+                                {{ form.password(class="form-control glass-input" + (" is-invalid" if form.password.errors else ""), id="password") }}
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% for error in form.password.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                {{ form.remember_me(class="form-check-input", id="remember_me") }}
+                                <label class="form-check-label" for="remember_me">Remember me</label>
+                            </div>
+                            <a href="{{ url_for('auth.forgot_password') }}" class="auth-link small">Forgot Password?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-glow w-100 btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                        </button>
+                    </form>
+
+                    <div class="auth-footer text-center mt-4">
+                        <span class="text-muted">Don't have an account?</span>
+                        <a href="{{ url_for('auth.register') }}" class="auth-link">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

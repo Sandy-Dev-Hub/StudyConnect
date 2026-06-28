@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% block title %}Leaderboard — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h1 class="page-title mb-2">
+                <i class="bi bi-trophy-fill text-warning me-2"></i>Leaderboard
+            </h1>
+            <p class="text-muted">Compete with top performing students and build your daily streaks</p>
+        </div>
+
+        <!-- Period Toggle -->
+        <div class="text-center mb-4">
+            <div class="btn-group glass-btn-group" role="group">
+                <a href="{{ url_for('leaderboard.index', period='alltime', subject=current_subject, exam=current_exam) }}"
+                   class="btn btn-outline-light {% if period == 'alltime' %}active{% endif %}">
+                    <i class="bi bi-infinity me-1"></i>All Time
+                </a>
+                <a href="{{ url_for('leaderboard.index', period='weekly', subject=current_subject, exam=current_exam) }}"
+                   class="btn btn-outline-light {% if period == 'weekly' %}active{% endif %}">
+                    <i class="bi bi-calendar-week me-1"></i>This Week
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters Form -->
+        <div class="glass-card filter-bar mb-4">
+            <form method="GET" action="{{ url_for('leaderboard.index') }}" class="row g-3 align-items-end">
+                <input type="hidden" name="period" value="{{ period }}">
+                <div class="col-md-5">
+                    <label class="form-label small text-muted">Subject Filter</label>
+                    <select name="subject" class="form-select glass-input" onchange="this.form.submit()">
+                        <option value="">All Subjects</option>
+                        {% for s in subjects %}
+                            <option value="{{ s }}" {% if current_subject == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small text-muted">Exam Filter</label>
+                    <select name="exam" class="form-select glass-input" onchange="this.form.submit()">
+                        <option value="">All Exams</option>
+                        {% for e in exams %}
+                            <option value="{{ e }}" {% if current_exam == e %}selected{% endif %}>{{ e }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-glow w-100">
+                        <i class="bi bi-funnel me-1"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if leaders %}
+            <!-- Calculate Stats dynamically -->
+            {% set max_streak_user = namespace(user=none, streak=0) %}
+            {% for u in leaders %}
+                {% if u.current_streak > max_streak_user.streak %}
+                    {% set max_streak_user.user = u %}
+                    {% set max_streak_user.streak = u.current_streak %}
+                {% endif %}
+            {% endfor %}
+
+            <!-- Statistics Grid above rankings -->
+            <div class="leaderboard-stats-grid">
+                <!-- 1. Top Performer -->
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon performer">
+                        <i class="bi bi-award-fill"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Top Performer</span>
+                        <span class="leaderboard-stat-value">@{{ leaders[0].username }}</span>
+                        <span class="leaderboard-stat-subtext">{{ leaders[0].get('weekly_points', leaders[0].get('total_points', 0)) }} points</span>
+                    </div>
+                </div>
+
+                <!-- 2. Biggest Climber (Rank 2) -->
+                {% if leaders|length >= 2 %}
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon climber">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Top Challenger</span>
+                        <span class="leaderboard-stat-value">@{{ leaders[1].username }}</span>
+                        <span class="leaderboard-stat-subtext">{{ leaders[1].get('weekly_points', leaders[1].get('total_points', 0)) }} points</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon climber">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Top Challenger</span>
+                        <span class="leaderboard-stat-value">No Challenger</span>
+                        <span class="leaderboard-stat-subtext">Compete to claim this slot</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 3. Longest Streak -->
+                {% if max_streak_user.user %}
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon streak">
+                        <i class="bi bi-fire"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Longest Streak</span>
+                        <span class="leaderboard-stat-value">@{{ max_streak_user.user.username }}</span>
+                        <span class="leaderboard-stat-subtext">{{ max_streak_user.streak }} consecutive active days</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon streak">
+                        <i class="bi bi-fire"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Longest Streak</span>
+                        <span class="leaderboard-stat-value">No Streaks</span>
+                        <span class="leaderboard-stat-subtext">Post answers to start a streak</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 4. Rising Student (Rank 3 or last user) -->
+                {% if leaders|length >= 3 %}
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon rising">
+                        <i class="bi bi-rocket-takeoff-fill"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Rising Star</span>
+                        <span class="leaderboard-stat-value">@{{ leaders[2].username }}</span>
+                        <span class="leaderboard-stat-subtext">Ranked #3 on leaderboard</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="leaderboard-stat-card">
+                    <div class="leaderboard-stat-icon rising">
+                        <i class="bi bi-rocket-takeoff-fill"></i>
+                    </div>
+                    <div class="leaderboard-stat-info">
+                        <span class="leaderboard-stat-label">Rising Star</span>
+                        <span class="leaderboard-stat-value">@{{ leaders[-1].username }}</span>
+                        <span class="leaderboard-stat-subtext">Latest ranking student</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Premium Podium Section -->
+            <div class="podium-section">
+                <!-- Rank 2 (Silver) - Left Column -->
+                {% if leaders|length >= 2 %}
+                <div class="podium-card podium-card-silver">
+                    <div class="podium-avatar-container">
+                        <div class="podium-avatar-circle" style="background-color: {{ leaders[1].avatar_color }}">
+                            {{ leaders[1].initials }}
+                        </div>
+                        <div class="podium-rank-badge">#2</div>
+                    </div>
+                    <div class="podium-user-info">
+                        <h3 class="podium-username">@{{ leaders[1].username }}</h3>
+                        {% if leaders[1].current_streak > 0 %}
+                            <span class="badge-tag exam-tag"><i class="bi bi-fire me-1 text-warning"></i>{{ leaders[1].current_streak }} Day Streak</span>
+                        {% else %}
+                            <span class="badge-tag text-muted">Challenger</span>
+                        {% endif %}
+                    </div>
+                    <div class="podium-points-info">
+                        <div class="podium-points-label">Silver Trophy</div>
+                        <div class="podium-points-value">{{ leaders[1].get('weekly_points', leaders[1].get('total_points', 0)) }} PTS</div>
+                    </div>
+                    <a href="{{ url_for('main.profile', user_id=leaders[1].id) }}" class="btn btn-glass btn-sm w-100 mt-3">
+                        View Profile
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Rank 1 (Gold) - Center Column -->
+                <div class="podium-card podium-card-gold">
+                    <div class="podium-crown">🏆</div>
+                    <div class="podium-avatar-container">
+                        <div class="podium-avatar-circle" style="background-color: {{ leaders[0].avatar_color }}">
+                            {{ leaders[0].initials }}
+                        </div>
+                        <div class="podium-rank-badge">#1</div>
+                    </div>
+                    <div class="podium-user-info">
+                        <h3 class="podium-username">@{{ leaders[0].username }}</h3>
+                        {% if leaders[0].current_streak > 0 %}
+                            <span class="badge-tag subject-tag"><i class="bi bi-fire me-1 text-danger"></i>{{ leaders[0].current_streak }} Day Streak</span>
+                        {% else %}
+                            <span class="badge-tag text-muted">Weekly Leader</span>
+                        {% endif %}
+                    </div>
+                    <div class="podium-points-info">
+                        <div class="podium-points-label">Gold Trophy</div>
+                        <div class="podium-points-value">{{ leaders[0].get('weekly_points', leaders[0].get('total_points', 0)) }} PTS</div>
+                    </div>
+                    <a href="{{ url_for('main.profile', user_id=leaders[0].id) }}" class="btn btn-glow btn-sm w-100 mt-3">
+                        View Profile
+                    </a>
+                </div>
+
+                <!-- Rank 3 (Bronze) - Right Column -->
+                {% if leaders|length >= 3 %}
+                <div class="podium-card podium-card-bronze">
+                    <div class="podium-avatar-container">
+                        <div class="podium-avatar-circle" style="background-color: {{ leaders[2].avatar_color }}">
+                            {{ leaders[2].initials }}
+                        </div>
+                        <div class="podium-rank-badge">#3</div>
+                    </div>
+                    <div class="podium-user-info">
+                        <h3 class="podium-username">@{{ leaders[2].username }}</h3>
+                        {% if leaders[2].current_streak > 0 %}
+                            <span class="badge-tag exam-tag"><i class="bi bi-fire me-1 text-warning"></i>{{ leaders[2].current_streak }} Day Streak</span>
+                        {% else %}
+                            <span class="badge-tag text-muted">Contender</span>
+                        {% endif %}
+                    </div>
+                    <div class="podium-points-info">
+                        <div class="podium-points-label">Bronze Trophy</div>
+                        <div class="podium-points-value">{{ leaders[2].get('weekly_points', leaders[2].get('total_points', 0)) }} PTS</div>
+                    </div>
+                    <a href="{{ url_for('main.profile', user_id=leaders[2].id) }}" class="btn btn-glass btn-sm w-100 mt-3">
+                        View Profile
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Remaining Rankings (Rank 4+) -->
+            {% if leaders|length > 3 %}
+            <div class="mb-3 mt-4">
+                <h3 class="section-title">All Contenders</h3>
+            </div>
+            <div class="rankings-list">
+                {% for user in leaders %}
+                {% if loop.index > 3 %}
+                <a href="{{ url_for('main.profile', user_id=user.id) }}" class="ranking-row-card animate-on-scroll">
+                    <div class="ranking-left">
+                        <div class="ranking-num-badge">#{{ loop.index }}</div>
+                        <div class="ranking-avatar" style="background-color: {{ user.avatar_color }}">
+                            {{ user.initials }}
+                        </div>
+                        <div>
+                            <div class="ranking-username">@{{ user.username }}</div>
+                            <div class="small text-muted">
+                                {% if current_subject %}
+                                    {{ current_subject }}
+                                {% else %}
+                                    Active Student
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ranking-right">
+                        {% if user.current_streak > 0 %}
+                        <div class="ranking-streak-badge">
+                            <i class="bi bi-fire text-warning"></i>{{ user.current_streak }}
+                        </div>
+                        {% endif %}
+                        <div class="ranking-points-value">
+                            {{ user.get('weekly_points', user.get('total_points', 0)) }} PTS
+                        </div>
+                        <div class="ranking-trend">
+                            <i class="bi bi-caret-up-fill"></i>
+                        </div>
+                    </div>
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        {% else %}
+            <!-- Empty State -->
+            <div class="glass-card text-center py-5">
+                <i class="bi bi-trophy display-1 text-muted mb-3"></i>
+                <h3>No rankings found</h3>
+                <p class="text-muted">Try removing subject/exam filters or write answers to claim the podium!</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

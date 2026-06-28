@@ -1,0 +1,45 @@
+<a href="{{ url_for('questions.detail', question_id=question.id) }}" class="question-card-link">
+    <div class="glass-card question-card animate-on-scroll">
+        <div class="question-card-header">
+            <div class="d-flex align-items-center">
+                <div class="avatar-sm" style="background-color: {{ question.author.avatar_color }}">
+                    {{ question.author.initials }}
+                </div>
+                <div class="ms-2">
+                    <span class="question-author">{{ question.author.username }}</span>
+                    <span class="question-time">{{ question.time_ago }}</span>
+                </div>
+            </div>
+            {% if question.is_resolved %}
+                <span class="badge badge-resolved">
+                    <i class="bi bi-check-circle-fill me-1"></i>Resolved
+                </span>
+            {% endif %}
+        </div>
+
+        <h3 class="question-card-title">{{ question.title }}</h3>
+        <p class="question-card-preview">{{ question.body_preview }}</p>
+
+        <div class="question-card-footer">
+            <div class="question-tags">
+                <span class="tag tag-subject">{{ question.subject_tag }}</span>
+                {% if question.exam_tag %}
+                    <span class="tag tag-exam">{{ question.exam_tag }}</span>
+                {% endif %}
+            </div>
+            <div class="question-stats">
+                <span class="stat-item" title="Answers">
+                    <i class="bi bi-chat-dots"></i> {{ question.answer_count }}
+                </span>
+                <span class="stat-item" title="Views">
+                    <i class="bi bi-eye"></i> {{ question.view_count }}
+                </span>
+                {% if question.image_filename %}
+                    <span class="stat-item" title="Has image">
+                        <i class="bi bi-image"></i>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</a>

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="glass-card auth-card animate-fade-in-up">
+                    <div class="auth-header text-center">
+                        <div class="auth-icon">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <h2 class="auth-title">Create Account</h2>
+                        <p class="auth-subtitle">Join the learning community</p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label">{{ form.username.label.text }}</label>
+                            {{ form.username(class="form-control glass-input" + (" is-invalid" if form.username.errors else ""), id="username", **{"aria-describedby": "username-error" if form.username.errors else ""}) }}
+                            {% for error in form.username.errors %}
+                                <div class="invalid-feedback" id="username-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">{{ form.email.label.text }}</label>
+                            {{ form.email(class="form-control glass-input" + (" is-invalid" if form.email.errors else ""), id="email", **{"aria-describedby": "email-error" if form.email.errors else ""}) }}
+                            {% for error in form.email.errors %}
+                                <div class="invalid-feedback" id="email-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">{{ form.password.label.text }}</label>
+                            <div class="input-group">
+                                {{ form.password(class="form-control glass-input" + (" is-invalid" if form.password.errors else ""), id="password", **{"aria-describedby": "password-error" if form.password.errors else ""}) }}
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% for error in form.password.errors %}
+                                <div class="invalid-feedback d-block" id="password-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="confirm_password" class="form-label">{{ form.confirm_password.label.text }}</label>
+                            <div class="input-group">
+                                {{ form.confirm_password(class="form-control glass-input" + (" is-invalid" if form.confirm_password.errors else ""), id="confirm_password", **{"aria-describedby": "confirm-password-error" if form.confirm_password.errors else ""}) }}
+                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="confirm_password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            {% for error in form.confirm_password.errors %}
+                                <div class="invalid-feedback d-block" id="confirm-password-error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" class="btn btn-glow w-100 btn-lg">
+                            <i class="bi bi-rocket-takeoff me-2"></i>Create Account
+                        </button>
+                    </form>
+
+                    <div class="auth-footer text-center mt-4">
+                        <span class="text-muted">Already have an account?</span>
+                        <a href="{{ url_for('auth.login') }}" class="auth-link">Sign In</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

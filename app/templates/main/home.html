@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}StudyConnect — Learn Together, Grow Together{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-bg-effects">
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+    </div>
+    <div class="container">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-7 text-center text-lg-start">
+                <h1 class="hero-title animate-fade-in-up">
+                    Learn Together.<br>
+                    <span class="gradient-text">Grow Together.</span>
+                </h1>
+                <p class="hero-subtitle animate-fade-in-up delay-1">
+                    Ask doubts, share knowledge, earn points, and climb the leaderboard.
+                    Your study community starts here.
+                </p>
+                <div class="hero-actions animate-fade-in-up delay-2">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('questions.ask') }}" class="btn btn-glow btn-lg me-3">
+                            <i class="bi bi-plus-circle me-2"></i>Ask a Question
+                        </a>
+                        <a href="{{ url_for('questions.feed') }}" class="btn btn-glass btn-lg">
+                            <i class="bi bi-compass me-2"></i>Browse Feed
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-glow btn-lg me-3">
+                            <i class="bi bi-rocket-takeoff me-2"></i>Get Started
+                        </a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-glass btn-lg">
+                            Sign In
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Stats Row -->
+                <div class="hero-stats animate-fade-in-up delay-3">
+                    <div class="hero-stat">
+                        <span class="hero-stat-number">{{ total_questions }}</span>
+                        <span class="hero-stat-label">Question{{ total_questions|pluralize }}</span>
+                    </div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number">{{ total_users }}</span>
+                        <span class="hero-stat-label">Student{{ total_users|pluralize }}</span>
+                    </div>
+                    <div class="hero-stat-divider"></div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-number"><i class="bi bi-fire text-warning"></i></span>
+                        <span class="hero-stat-label">Streaks</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="hero-illustration animate-float">
+                    <div class="hero-card-stack">
+                        <div class="hero-mock-card hero-mock-card-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="avatar-xs" style="background:#6C63FF">AB</div>
+                                <span class="ms-2 small text-muted">asked 2m ago</span>
+                            </div>
+                            <div class="small fw-semibold">How to solve quadratic equations?</div>
+                            <div class="d-flex gap-2 mt-2">
+                                <span class="tag tag-subject" style="font-size:0.65rem">Mathematics</span>
+                                <span class="tag tag-exam" style="font-size:0.65rem">JEE Main</span>
+                            </div>
+                        </div>
+                        <div class="hero-mock-card hero-mock-card-2">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="avatar-xs" style="background:#43E97B">CD</div>
+                                <span class="ms-2 small text-muted">answered</span>
+                                <span class="badge badge-resolved ms-auto" style="font-size:0.6rem"><i class="bi bi-check-circle-fill me-1"></i>Accepted</span>
+                            </div>
+                            <div class="small">Use the quadratic formula: x = (-b ± √(b²-4ac)) / 2a</div>
+                            <div class="d-flex align-items-center mt-2">
+                                <span class="text-success small"><i class="bi bi-star-fill"></i> +25 pts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Questions + Leaderboard -->
+<section class="content-section">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Recent Questions -->
+            <div class="col-lg-8">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="bi bi-clock-history me-2"></i>Recent Questions
+                    </h2>
+                    <a href="{{ url_for('questions.feed') }}" class="section-link">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                {% if recent_questions %}
+                    <div class="questions-grid">
+                        {% for question in recent_questions %}
+                            {% include '_partials/_question_card.html' %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="glass-card text-center py-5">
+                        <i class="bi bi-chat-square-text display-1 text-muted mb-3"></i>
+                        <h4>No questions yet</h4>
+                        <p class="text-muted">Be the first to ask a question!</p>
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('questions.ask') }}" class="btn btn-glow">
+                                <i class="bi bi-plus-circle me-2"></i>Ask a Question
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-glow">
+                                Join StudyConnect
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar: Leaderboard Widget -->
+            <div class="col-lg-4">
+                {% include '_partials/_leaderboard_widget.html' %}
+
+                <!-- How It Works -->
+                <div class="glass-card mt-4 how-it-works">
+                    <h5 class="widget-title mb-3">
+                        <i class="bi bi-stars me-2 text-warning"></i>How It Works
+                    </h5>
+                    <div class="hiw-item">
+                        <div class="hiw-icon"><i class="bi bi-question-circle"></i></div>
+                        <div>
+                            <strong>Ask</strong>
+                            <p class="small text-muted mb-0">Post your doubts with subject tags</p>
+                        </div>
+                    </div>
+                    <div class="hiw-item">
+                        <div class="hiw-icon"><i class="bi bi-chat-left-text"></i></div>
+                        <div>
+                            <strong>Answer</strong>
+                            <p class="small text-muted mb-0">Help others and earn <strong>+10 pts</strong></p>
+                        </div>
+                    </div>
+                    <div class="hiw-item">
+                        <div class="hiw-icon"><i class="bi bi-hand-thumbs-up"></i></div>
+                        <div>
+                            <strong>Vote</strong>
+                            <p class="small text-muted mb-0">Upvote great answers for <strong>+5 pts</strong></p>
+                        </div>
+                    </div>
+                    <div class="hiw-item">
+                        <div class="hiw-icon"><i class="bi bi-trophy"></i></div>
+                        <div>
+                            <strong>Climb</strong>
+                            <p class="small text-muted mb-0">Top the leaderboard & maintain streaks</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

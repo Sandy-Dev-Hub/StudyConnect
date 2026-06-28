@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}{{ profile_user.username }} — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Profile Header -->
+            <div class="col-12">
+                <div class="glass-card profile-header animate-fade-in-up">
+                    <div class="row align-items-center">
+                        <div class="col-md-8 d-flex align-items-center">
+                            <div class="profile-avatar" style="background-color: {{ profile_user.avatar_color }}">
+                                {{ profile_user.initials }}
+                            </div>
+                            <div class="ms-4">
+                                <h2 class="mb-1">{{ profile_user.username }}</h2>
+                                {% if profile_user.bio %}
+                                    <p class="text-muted mb-2">{{ profile_user.bio }}</p>
+                                {% endif %}
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <span class="profile-stat">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        Joined {{ profile_user.created_at.strftime('%b %Y') }}
+                                    </span>
+                                    {% if profile_user.current_streak > 0 %}
+                                    <span class="profile-stat streak-active">
+                                        <i class="bi bi-fire streak-flame me-1"></i>
+                                        {{ profile_user.current_streak }} day streak
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="profile-stats-grid">
+                                <div class="profile-stat-box">
+                                    <span class="profile-stat-number">{{ profile_user.total_points }}</span>
+                                    <span class="profile-stat-label">Points</span>
+                                </div>
+                                <div class="profile-stat-box">
+                                    <span class="profile-stat-number">{{ profile_user.question_count }}</span>
+                                    <span class="profile-stat-label">Questions</span>
+                                </div>
+                                <div class="profile-stat-box">
+                                    <span class="profile-stat-number">{{ profile_user.answer_count }}</span>
+                                    <span class="profile-stat-label">Answers</span>
+                                </div>
+                                <div class="profile-stat-box">
+                                    <span class="profile-stat-number">{{ profile_user.longest_streak }}</span>
+                                    <span class="profile-stat-label">Best Streak</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs + Content -->
+            <div class="col-lg-8">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-pills glass-tabs mb-3">
+                    <li class="nav-item">
+                        <a class="nav-link {% if tab == 'questions' %}active{% endif %}"
+                           href="{{ url_for('main.profile', user_id=profile_user.id, tab='questions') }}">
+                            <i class="bi bi-chat-square-text me-1"></i>Questions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if tab == 'answers' %}active{% endif %}"
+                           href="{{ url_for('main.profile', user_id=profile_user.id, tab='answers') }}">
+                            <i class="bi bi-chat-left-text me-1"></i>Answers
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Content -->
+                {% if tab == 'questions' %}
+                    {% if items.items %}
+                        {% for question in items.items %}
+                            {% include '_partials/_question_card.html' %}
+                        {% endfor %}
+                        {% set pagination = items %}
+                        {% include '_partials/_pagination.html' %}
+                    {% else %}
+                        <div class="glass-card text-center py-4">
+                            <i class="bi bi-chat-square-text display-4 text-muted mb-3"></i>
+                            <p class="text-muted">No questions posted yet.</p>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% if items.items %}
+                        {% for answer in items.items %}
+                        <div class="glass-card mb-3 animate-on-scroll">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <a href="{{ url_for('questions.detail', question_id=answer.question_id) }}" class="text-decoration-none">
+                                    <h5 class="mb-0 text-light">{{ answer.question.title }}</h5>
+                                </a>
+                                {% if answer.is_accepted %}
+                                    <span class="badge badge-resolved"><i class="bi bi-check-circle-fill me-1"></i>Accepted</span>
+                                {% endif %}
+                            </div>
+                            <div class="markdown-body small">
+                                {{ answer.body|markdown|safe }}
+                            </div>
+                            <div class="d-flex align-items-center mt-2 text-muted small">
+                                <span><i class="bi bi-hand-thumbs-up me-1"></i>{{ answer.score }} votes</span>
+                                <span class="ms-3"><i class="bi bi-clock me-1"></i>{{ answer.time_ago }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% set pagination = items %}
+                        {% include '_partials/_pagination.html' %}
+                    {% else %}
+                        <div class="glass-card text-center py-4">
+                            <i class="bi bi-chat-left-text display-4 text-muted mb-3"></i>
+                            <p class="text-muted">No answers posted yet.</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Sidebar: Points History -->
+            <div class="col-lg-4">
+                <div class="glass-card">
+                    <h5 class="widget-title mb-3">
+                        <i class="bi bi-clock-history me-2"></i>Recent Points
+                    </h5>
+                    {% if points_history %}
+                        {% for log in points_history %}
+                        <div class="points-history-item">
+                            <div>
+                                <span class="{% if log.points > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">
+                                    {% if log.points > 0 %}+{% endif %}{{ log.points }}
+                                </span>
+                                <span class="text-muted small ms-2">{{ log.reason_label }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small">No points activity yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

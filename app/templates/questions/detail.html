@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block title %}{{ question.title }} — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Question -->
+                <div class="glass-card question-detail animate-fade-in-up">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <a href="{{ url_for('main.profile', user_id=question.author.id) }}" class="text-decoration-none">
+                                <div class="avatar-md" style="background-color: {{ question.author.avatar_color }}">
+                                    {{ question.author.initials }}
+                                </div>
+                            </a>
+                            <div class="ms-3">
+                                <a href="{{ url_for('main.profile', user_id=question.author.id) }}" class="question-author-link">
+                                    {{ question.author.username }}
+                                </a>
+                                <div class="question-meta">
+                                    <span><i class="bi bi-clock me-1"></i>{{ question.time_ago }}</span>
+                                    <span class="ms-3"><i class="bi bi-eye me-1"></i>{{ question.view_count }} view{{ question.view_count|pluralize }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% if question.is_resolved %}
+                            <span class="badge badge-resolved badge-lg">
+                                <i class="bi bi-check-circle-fill me-1"></i>Resolved
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <h1 class="question-detail-title">{{ question.title }}</h1>
+
+                    <div class="question-tags mb-3">
+                        <span class="tag tag-subject">{{ question.subject_tag }}</span>
+                        {% if question.exam_tag %}
+                            <span class="tag tag-exam">{{ question.exam_tag }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="markdown-body">
+                        {{ question.body|markdown|safe }}
+                    </div>
+
+                    {% if question.image_filename %}
+                    <div class="question-image mt-3">
+                        <a href="{{ url_for('static', filename='uploads/' + question.image_filename) }}"
+                           target="_blank" rel="noopener noreferrer"
+                           title="View full image" aria-label="View full size image">
+                            <img src="{{ url_for('static', filename='uploads/' + question.image_filename) }}"
+                                 alt="Question attachment" class="img-fluid rounded-3" loading="lazy"
+                                 style="cursor:pointer">
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Answers Section -->
+                <div class="answers-section mt-4">
+                    <h3 class="section-title mb-3">
+                        <i class="bi bi-chat-dots me-2"></i>
+                        {{ question.answer_count }} Answer{{ question.answer_count|pluralize }}
+                    </h3>
+
+                    {% for answer in question.answers %}
+                    <div class="glass-card answer-card mb-3 animate-on-scroll {% if answer.is_accepted %}answer-accepted{% endif %}"
+                         id="answer-{{ answer.id }}">
+                        <div class="d-flex">
+                            <!-- Vote Column -->
+                            <div class="vote-column text-center me-3">
+                                <button class="vote-btn vote-up {% if current_user.is_authenticated and answer.get_user_vote(current_user.id) == 1 %}voted{% endif %}"
+                                        data-answer-id="{{ answer.id }}" data-value="1"
+                                        {% if not current_user.is_authenticated %}disabled title="Sign in to vote"{% endif %}>
+                                    <i class="bi bi-caret-up-fill"></i>
+                                </button>
+                                <span class="vote-score" id="score-{{ answer.id }}">{{ answer.score }}</span>
+                                <button class="vote-btn vote-down {% if current_user.is_authenticated and answer.get_user_vote(current_user.id) == -1 %}voted{% endif %}"
+                                        data-answer-id="{{ answer.id }}" data-value="-1"
+                                        {% if not current_user.is_authenticated %}disabled title="Sign in to vote"{% endif %}>
+                                    <i class="bi bi-caret-down-fill"></i>
+                                </button>
+
+                                {% if current_user.is_authenticated and question.author_id == current_user.id %}
+                                <button class="accept-btn mt-2 {% if answer.is_accepted %}accepted{% endif %}"
+                                        data-answer-id="{{ answer.id }}"
+                                        title="{% if answer.is_accepted %}Unaccept this answer{% else %}Accept this answer{% endif %}">
+                                    <i class="bi bi-check-circle{% if answer.is_accepted %}-fill{% endif %}"></i>
+                                </button>
+                                {% elif answer.is_accepted %}
+                                <div class="accepted-badge mt-2" title="Accepted answer">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Answer Content -->
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{{ url_for('main.profile', user_id=answer.author.id) }}" class="text-decoration-none">
+                                            <div class="avatar-sm" style="background-color: {{ answer.author.avatar_color }}">
+                                                {{ answer.author.initials }}
+                                            </div>
+                                        </a>
+                                        <div class="ms-2">
+                                            <a href="{{ url_for('main.profile', user_id=answer.author.id) }}" class="answer-author-link">
+                                                {{ answer.author.username }}
+                                            </a>
+                                            <span class="answer-points">
+                                                <i class="bi bi-star-fill me-1"></i>{{ answer.author.total_points }} pts
+                                            </span>
+                                            <span class="answer-time ms-2">{{ answer.time_ago }}</span>
+                                        </div>
+                                    </div>
+
+                                    {% if current_user.is_authenticated and answer.author_id == current_user.id %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary border-0" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end glass-dropdown">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('answers.edit', answer_id=answer.id) }}">
+                                                    <i class="bi bi-pencil me-2"></i>Edit
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('answers.delete', answer_id=answer.id) }}"
+                                                      class="delete-form" data-confirm="Are you sure you want to delete this answer?">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="dropdown-item text-danger">
+                                                        <i class="bi bi-trash me-2"></i>Delete
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="markdown-body">
+                                    {{ answer.body|markdown|safe }}
+                                </div>
+
+                                {% if answer.is_accepted %}
+                                <div class="accepted-label mt-2">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Accepted Answer
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {% if question.answer_count == 0 %}
+                    <div class="glass-card text-center py-4">
+                        <i class="bi bi-chat-square display-4 text-muted mb-3"></i>
+                        <h5>No answers yet</h5>
+                        <p class="text-muted">Be the first to answer this question!</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Post Answer Form -->
+                {% if current_user.is_authenticated %}
+                <div class="glass-card mt-4 animate-on-scroll" id="answer-form">
+                    <h4 class="mb-3">
+                        <i class="bi bi-reply me-2"></i>Your Answer
+                    </h4>
+                    <form method="POST" action="{{ url_for('answers.post', question_id=question.id) }}" novalidate>
+                        {{ answer_form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <label for="body" class="form-label">{{ answer_form.body.label.text }}</label>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="answer-preview-toggle">
+                                    <i class="bi bi-eye me-1"></i>Preview
+                                </button>
+                            </div>
+                            {{ answer_form.body(class="form-control glass-input" + (" is-invalid" if answer_form.body.errors else ""), id="answer-body") }}
+                            <div id="answer-markdown-preview" class="markdown-preview d-none"></div>
+                            <div class="form-text">Markdown supported. Earn <strong>+10 points</strong> for answering!</div>
+                            {% for error in answer_form.body.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" class="btn btn-glow">
+                            <i class="bi bi-send me-2"></i>Post Answer
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="glass-card mt-4 text-center py-4">
+                    <p class="mb-2">Sign in to answer this question.</p>
+                    <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-glow">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Question Stats -->
+                <div class="glass-card">
+                    <h5 class="widget-title mb-3">
+                        <i class="bi bi-bar-chart me-2"></i>Question Stats
+                    </h5>
+                    <div class="stat-row">
+                        <span class="text-muted">Views</span>
+                        <span class="fw-semibold">{{ question.view_count }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="text-muted">Answers</span>
+                        <span class="fw-semibold">{{ question.answer_count }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="text-muted">Status</span>
+                        {% if question.is_resolved %}
+                            <span class="badge badge-resolved"><i class="bi bi-check-circle-fill me-1"></i>Resolved</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Open</span>
+                        {% endif %}
+                    </div>
+                    <div class="stat-row">
+                        <span class="text-muted">Asked by</span>
+                        <a href="{{ url_for('main.profile', user_id=question.author.id) }}" class="text-decoration-none">
+                            {{ question.author.username }}
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Related Info -->
+                <div class="glass-card mt-3">
+                    <h5 class="widget-title mb-3">
+                        <i class="bi bi-stars me-2 text-warning"></i>Points Guide
+                    </h5>
+                    <div class="points-guide-item">
+                        <span class="badge bg-success">+10</span>
+                        <span>Post an answer</span>
+                    </div>
+                    <div class="points-guide-item">
+                        <span class="badge bg-warning text-dark">+25</span>
+                        <span>Answer accepted</span>
+                    </div>
+                    <div class="points-guide-item">
+                        <span class="badge bg-info">+5</span>
+                        <span>Receive an upvote</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

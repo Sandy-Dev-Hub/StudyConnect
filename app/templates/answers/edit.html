@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Edit Answer — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="glass-card animate-fade-in-up">
+                    <h2 class="mb-4">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Answer
+                    </h2>
+
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <label for="body" class="form-label">{{ form.body.label.text }}</label>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="answer-preview-toggle">
+                                    <i class="bi bi-eye me-1"></i>Preview
+                                </button>
+                            </div>
+                            {{ form.body(class="form-control glass-input" + (" is-invalid" if form.body.errors else ""), id="answer-body") }}
+                            <div id="answer-markdown-preview" class="markdown-preview d-none"></div>
+                            {% for error in form.body.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-glow flex-grow-1">
+                                <i class="bi bi-check-circle me-2"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('questions.detail', question_id=answer.question_id) }}" class="btn btn-glass">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

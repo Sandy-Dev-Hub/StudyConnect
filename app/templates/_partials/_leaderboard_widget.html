@@ -1,0 +1,39 @@
+{% if top_users %}
+<div class="glass-card leaderboard-widget">
+    <div class="widget-header">
+        <h5 class="widget-title">
+            <i class="bi bi-trophy-fill text-warning me-2"></i>Top Students
+        </h5>
+        <a href="{{ url_for('leaderboard.index') }}" class="widget-link">View All <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="leaderboard-list">
+        {% for user in top_users %}
+        <a href="{{ url_for('main.profile', user_id=user.id) }}" class="leaderboard-item">
+            <div class="leaderboard-rank {% if loop.index <= 3 %}rank-top{% endif %}">
+                {% if loop.index == 1 %}
+                    <i class="bi bi-trophy-fill text-warning"></i>
+                {% elif loop.index == 2 %}
+                    <i class="bi bi-trophy-fill" style="color: #C0C0C0;"></i>
+                {% elif loop.index == 3 %}
+                    <i class="bi bi-trophy-fill" style="color: #CD7F32;"></i>
+                {% else %}
+                    <span>{{ loop.index }}</span>
+                {% endif %}
+            </div>
+            <div class="avatar-xs" style="background-color: {{ user.avatar_color }}">
+                {{ user.initials }}
+            </div>
+            <div class="leaderboard-info">
+                <span class="leaderboard-name">{{ user.username }}</span>
+                <span class="leaderboard-points">{{ user.total_points }} pts</span>
+            </div>
+            {% if user.current_streak > 0 %}
+            <span class="streak-mini">
+                <i class="bi bi-fire"></i>{{ user.current_streak }}
+            </span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

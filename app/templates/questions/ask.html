@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Ask a Question — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="glass-card animate-fade-in-up">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="auth-icon me-3" style="width:48px;height:48px;font-size:1.2rem">
+                            <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-0">Ask a Question</h2>
+                            <p class="text-muted mb-0 small">Get help from the community</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('questions.ask') }}" enctype="multipart/form-data" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">{{ form.title.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.title(class="form-control glass-input" + (" is-invalid" if form.title.errors else ""), id="title") }}
+                            <div class="form-text">Be specific — imagine asking a classmate face to face.</div>
+                            {% for error in form.title.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="body" class="form-label d-flex justify-content-between">
+                                <span>{{ form.body.label.text }} <span class="text-danger">*</span></span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="preview-toggle">
+                                    <i class="bi bi-eye me-1"></i>Preview
+                                </button>
+                            </label>
+                            {{ form.body(class="form-control glass-input" + (" is-invalid" if form.body.errors else ""), id="body") }}
+                            <div id="markdown-preview" class="markdown-preview d-none"></div>
+                            <div class="form-text">Markdown supported: **bold**, *italic*, `code`, ```code blocks```</div>
+                            {% for error in form.body.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="subject_tag" class="form-label">{{ form.subject_tag.label.text }} <span class="text-danger">*</span></label>
+                                {{ form.subject_tag(class="form-select glass-input" + (" is-invalid" if form.subject_tag.errors else ""), id="subject_tag") }}
+                                {% for error in form.subject_tag.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="exam_tag" class="form-label">{{ form.exam_tag.label.text }}</label>
+                                {{ form.exam_tag(class="form-select glass-input", id="exam_tag") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="image" class="form-label">{{ form.image.label.text }}</label>
+                            <div class="image-upload-area" id="image-upload-area">
+                                {{ form.image(class="form-control glass-input", id="image", accept="image/*") }}
+                                <div id="image-preview-container" class="image-preview-container d-none">
+                                    <img id="image-preview" class="image-preview" alt="Preview">
+                                    <button type="button" class="btn btn-sm btn-danger image-remove" id="image-remove">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-text">PNG, JPG, GIF, WebP up to 5MB</div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-glow btn-lg flex-grow-1">
+                                <i class="bi bi-send me-2"></i>Post Question
+                            </button>
+                            <a href="{{ url_for('questions.feed') }}" class="btn btn-glass btn-lg">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

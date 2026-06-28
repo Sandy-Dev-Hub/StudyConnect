@@ -1,0 +1,36 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Environment secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# Virtual environment
+venv/
+.venv/
+
+# Database files
+*.db
+*.sqlite3
+
+# Uploads (kept via .gitkeep)
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# Migrations — generated; exclude from source control if preferred
+migrations/
+
+# Instance folder (Flask instance config)
+instance/
+
+# IDE files
+.vscode/
+.idea/
+*.DS_Store
+
+# Logs
+*.log

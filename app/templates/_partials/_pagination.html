@@ -1,0 +1,47 @@
+{% if pagination.pages > 1 %}
+<nav aria-label="Page navigation" class="pagination-wrapper">
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link glass-page-link" href="?page={{ pagination.prev_num }}{% for key, val in request.args.items() if key != 'page' %}&{{ key }}={{ val }}{% endfor %}" aria-label="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link glass-page-link"><i class="bi bi-chevron-left"></i></span>
+            </li>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == pagination.page %}
+                    <li class="page-item active">
+                        <span class="page-link glass-page-link">{{ page_num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link glass-page-link" href="?page={{ page_num }}{% for key, val in request.args.items() if key != 'page' %}&{{ key }}={{ val }}{% endfor %}">{{ page_num }}</a>
+                    </li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link glass-page-link">…</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link glass-page-link" href="?page={{ pagination.next_num }}{% for key, val in request.args.items() if key != 'page' %}&{{ key }}={{ val }}{% endfor %}" aria-label="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link glass-page-link"><i class="bi bi-chevron-right"></i></span>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

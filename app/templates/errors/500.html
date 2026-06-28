@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}500 — Server Error{% endblock %}
+
+{% block content %}
+<section class="error-section">
+    <div class="container text-center">
+        <div class="error-content animate-fade-in-up">
+            <div class="error-code gradient-text">500</div>
+            <h2 class="error-title">Something Went Wrong</h2>
+            <p class="error-message text-muted">
+                Our servers encountered an error. Please try again later.
+            </p>
+            <div class="error-actions">
+                <a href="{{ url_for('main.home') }}" class="btn btn-glow btn-lg me-2">
+                    <i class="bi bi-house me-2"></i>Go Home
+                </a>
+                <a href="javascript:location.reload()" class="btn btn-glass btn-lg">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Retry
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
