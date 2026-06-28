@@ -7,5 +7,6 @@ from app.models.streak import StudyStreak
 from app.models.group import StudyGroup, GroupMember
 from app.models.user_profile import UserProfile
 from app.models.connection import Connection
+from app.models.message import Conversation, Message
 
-__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection']
+__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message']

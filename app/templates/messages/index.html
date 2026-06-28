@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% block title %}Messages — StudyConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-container {
+    height: calc(100vh - 200px);
+    min-height: 500px;
+}
+.chat-sidebar {
+    height: 100%;
+    overflow-y: auto;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+.chat-main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.chat-message-bubble {
+    max-width: 75%;
+    padding: 0.75rem 1.25rem;
+    border-radius: 1rem;
+    position: relative;
+    word-break: break-word;
+}
+.chat-message-bubble.sent {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #EA8528 0%, #d4721f 100%);
+    color: #111;
+    border-bottom-right-radius: 0.25rem;
+    font-weight: 500;
+}
+.chat-message-bubble.received {
+    align-self: flex-start;
+    background: rgba(30, 30, 35, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-bottom-left-radius: 0.25rem;
+}
+.online-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #28a745;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid #111;
+}
+.offline-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #6c757d;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid #111;
+}
+.sidebar-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.sidebar-item:hover, .sidebar-item.active {
+    background: rgba(234, 133, 40, 0.15);
+    border-left: 4px solid #EA8528;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="content-section py-3">
+    <div class="container">
+        <div class="glass-card p-0 overflow-hidden chat-container">
+            <div class="row g-0 h-100">
+                <!-- Sidebar -->
+                <div class="col-md-4 col-lg-3 chat-sidebar bg-dark bg-opacity-50">
+                    <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-white"><i class="bi bi-chat-dots-fill me-2 text-warning"></i>Messages</h5>
+                        <span class="badge bg-warning text-dark small">Live</span>
+                    </div>
+
+                    <!-- Direct Messages Section -->
+                    <div class="p-2 text-muted small fw-bold text-uppercase mt-2 px-3">Direct Messages</div>
+                    <div id="dm-list" class="d-flex flex-column">
+                        {% if conversations %}
+                            {% for c in conversations %}
+                            <div class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_user and active_user.id == c.other_user.id %}active{% endif %}"
+                                 data-type="dm" data-id="{{ c.other_user.id }}" data-username="{{ c.other_user.username }}">
+                                <div class="position-relative flex-shrink-0">
+                                    {% if c.other_user.profile and c.other_user.profile.avatar_filename %}
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + c.other_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 42px; height: 42px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="nav-avatar d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem; background-color: {{ c.other_user.avatar_color }};">
+                                            {{ c.other_user.initials }}
+                                        </div>
+                                    {% endif %}
+                                    <span class="online-status-dot offline-dot position-absolute bottom-0 end-0" data-user-id="{{ c.other_user.id }}"></span>
+                                </div>
+                                <div class="overflow-hidden flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-white text-truncate">{{ c.other_user.username }}</strong>
+                                        <span class="text-muted" style="font-size: 0.7rem;">{{ c.last_message_time }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <small class="text-muted text-truncate d-block" style="max-width: 130px;">{{ c.last_message }}</small>
+                                        {% if c.unread_count > 0 %}
+                                            <span class="badge bg-warning text-dark rounded-pill">{{ c.unread_count }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small px-3 py-2 mb-0">No conversations yet.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Study Group Chats Section -->
+                    <div class="p-2 text-muted small fw-bold text-uppercase mt-3 px-3 border-top border-secondary border-opacity-25 pt-3">Group Chats</div>
+                    <div id="group-list" class="d-flex flex-column">
+                        {% if user_groups %}
+                            {% for g in user_groups %}
+                            <div class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_group and active_group.id == g.id %}active{% endif %}"
+                                 data-type="group" data-id="{{ g.id }}" data-name="{{ g.name }}">
+                                <div class="nav-avatar d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; font-size: 1.1rem; background-color: {{ g.avatar_color }};">
+                                    {{ g.name[:2].upper() }}
+                                </div>
+                                <div class="overflow-hidden">
+                                    <strong class="text-white d-block text-truncate">{{ g.name }}</strong>
+                                    <small class="text-muted"><i class="bi bi-people me-1"></i>{{ g.member_count }} Members</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small px-3 py-2 mb-0">No study groups joined.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Main Chat Window -->
+                <div class="col-md-8 col-lg-9 chat-main position-relative">
+                    <!-- Header -->
+                    <div id="chat-header" class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center bg-dark bg-opacity-25">
+                        <div class="d-flex align-items-center gap-3">
+                            <div id="chat-header-avatar" class="d-none"></div>
+                            <div>
+                                <h5 id="chat-header-title" class="mb-0 text-white">Select a conversation</h5>
+                                <small id="chat-header-subtitle" class="text-muted">Choose a direct message or study group chat from the sidebar</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages Box -->
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="text-center my-auto text-muted">
+                            <i class="bi bi-chat-dots display-3 mb-3 d-block opacity-50"></i>
+                            <p>Real-time messaging is ready. Select a conversation to start chatting!</p>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div id="typing-indicator" class="px-4 py-1 text-warning small fst-italic d-none" style="min-height: 24px;">
+                        Someone is typing...
+                    </div>
+
+                    <!-- Input Form -->
+                    <div id="chat-input-container" class="p-3 border-top border-secondary border-opacity-25 bg-dark bg-opacity-50 d-none">
+                        <form id="chat-form" class="d-flex gap-2" onsubmit="return false;">
+                            <input type="text" id="message-input" class="form-control bg-dark text-light border-secondary" placeholder="Type your message here..." autocomplete="off">
+                            <button type="submit" class="btn btn-glow px-4"><i class="bi bi-send-fill"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentUserId = {{ current_user.id }};
+    const socket = io();
+    let currentChatType = null;
+    let currentTargetId = null;
+    let typingTimeout = null;
+
+    // Socket Connection
+    socket.on('connect', () => {
+        socket.emit('get_online_users');
+    });
+
+    socket.on('online_users_list', (data) => {
+        const ids = data.online_user_ids || [];
+        document.querySelectorAll('.online-status-dot').forEach(dot => {
+            const uid = parseInt(dot.getAttribute('data-user-id'));
+            if (ids.includes(uid)) {
+                dot.classList.remove('offline-dot');
+                dot.classList.add('online-dot');
+            } else {
+                dot.classList.remove('online-dot');
+                dot.classList.add('offline-dot');
+            }
+        });
+    });
+
+    socket.on('user_status_change', (data) => {
+        const dot = document.querySelector(`.online-status-dot[data-user-id="${data.user_id}"]`);
+        if (dot) {
+            if (data.status === 'online') {
+                dot.classList.remove('offline-dot');
+                dot.classList.add('online-dot');
+            } else {
+                dot.classList.remove('online-dot');
+                dot.classList.add('offline-dot');
+            }
+        }
+    });
+
+    // Handle incoming new messages
+    socket.on('new_message', (msg) => {
+        if ((currentChatType === 'dm' && (msg.sender_id === currentTargetId || msg.sender_id === currentUserId)) ||
+            (currentChatType === 'group' && msg.group_id === currentTargetId)) {
+            appendMessageBubble(msg);
+            scrollToBottom();
+        }
+    });
+
+    // Handle typing indicators
+    socket.on('user_typing', (data) => {
+        const ind = document.getElementById('typing-indicator');
+        if (data.is_typing) {
+            ind.textContent = `${data.username} is typing...`;
+            ind.classList.remove('d-none');
+        } else {
+            ind.classList.add('d-none');
+        }
+    });
+
+    // Handle chat notifications
+    socket.on('chat_notification', (data) => {
+        if (currentChatType !== 'dm' || currentTargetId !== data.sender_id) {
+            const badge = document.getElementById('navbar-unread-badge');
+            if (badge) {
+                let count = parseInt(badge.textContent) || 0;
+                badge.textContent = count + 1;
+                badge.classList.remove('d-none');
+            }
+        }
+    });
+
+    // Sidebar clicking
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            this.classList.add('active');
+
+            if (currentChatType && currentTargetId) {
+                socket.emit('leave_chat', { type: currentChatType, target_id: currentTargetId });
+            }
+
+            const type = this.getAttribute('data-type');
+            const id = parseInt(this.getAttribute('data-id'));
+            loadChat(type, id);
+        });
+    });
+
+    function loadChat(type, id) {
+        currentChatType = type;
+        currentTargetId = id;
+        socket.emit('join_chat', { type: type, target_id: id });
+
+        document.getElementById('chat-input-container').classList.remove('d-none');
+        const headerTitle = document.getElementById('chat-header-title');
+        const headerSub = document.getElementById('chat-header-subtitle');
+        const messagesBox = document.getElementById('chat-messages');
+        messagesBox.innerHTML = '<div class="text-center my-auto"><div class="spinner-border text-warning" role="status"></div></div>';
+
+        const endpoint = type === 'dm' ? `/messages/api/dm/${id}` : `/messages/api/group/${id}`;
+        fetch(endpoint)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    messagesBox.innerHTML = `<div class="alert alert-danger mx-auto my-auto">${data.error}</div>`;
+                    return;
+                }
+                if (type === 'dm') {
+                    headerTitle.textContent = data.other_user.username;
+                    headerSub.textContent = 'Direct Message';
+                } else {
+                    headerTitle.textContent = data.group.name;
+                    headerSub.textContent = `Study Group &bull; ${data.group.member_count} Members`;
+                }
+
+                messagesBox.innerHTML = '';
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => appendMessageBubble(msg));
+                } else {
+                    messagesBox.innerHTML = '<div class="text-center my-auto text-muted small"><p>No messages in this chat yet. Say hello!</p></div>';
+                }
+                scrollToBottom();
+            });
+    }
+
+    function appendMessageBubble(msg) {
+        const messagesBox = document.getElementById('chat-messages');
+        // Remove placeholder if present
+        if (messagesBox.querySelector('.text-center')) {
+            messagesBox.innerHTML = '';
+        }
+
+        const isSent = msg.sender_id === currentUserId;
+        const div = document.createElement('div');
+        div.className = `chat-message-bubble ${isSent ? 'sent' : 'received'} animate-fade-in-up`;
+        
+        let headerHtml = '';
+        if (!isSent && currentChatType === 'group') {
+            headerHtml = `<div class="small text-warning fw-bold mb-1">${msg.sender_username}</div>`;
+        }
+        
+        div.innerHTML = `${headerHtml}<div>${msg.body}</div><div class="text-end mt-1" style="font-size: 0.65rem; opacity: 0.75;">${msg.created_at}</div>`;
+        messagesBox.appendChild(div);
+    }
+
+    function scrollToBottom() {
+        const messagesBox = document.getElementById('chat-messages');
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    // Input Typing & Sending
+    const input = document.getElementById('message-input');
+    const form = document.getElementById('chat-form');
+
+    input.addEventListener('input', () => {
+        if (!currentChatType || !currentTargetId) return;
+        socket.emit('typing_indicator', { type: currentChatType, target_id: currentTargetId, is_typing: true });
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            socket.emit('typing_indicator', { type: currentChatType, target_id: currentTargetId, is_typing: false });
+        }, 1500);
+    });
+
+    form.addEventListener('submit', () => {
+        const text = input.value.trim();
+        if (!text || !currentChatType || !currentTargetId) return;
+
+        socket.emit('send_chat_message', { type: currentChatType, target_id: currentTargetId, body: text });
+        input.value = '';
+        socket.emit('typing_indicator', { type: currentChatType, target_id: currentTargetId, is_typing: false });
+    });
+
+    // Check if auto-open requested via URL parameters
+    {% if active_user %}
+        loadChat('dm', {{ active_user.id }});
+    {% elif active_group %}
+        loadChat('group', {{ active_group.id }});
+    {% endif %}
+});
+</script>
+{% endblock %}

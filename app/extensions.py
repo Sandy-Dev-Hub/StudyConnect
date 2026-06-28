@@ -4,6 +4,7 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf.csrf import CSRFProtect
 from flask_caching import Cache
+from flask_socketio import SocketIO
 
 db = SQLAlchemy()
 migrate = Migrate()
@@ -11,6 +12,7 @@ login_manager = LoginManager()
 mail = Mail()
 csrf = CSRFProtect()
 cache = Cache()
+socketio = SocketIO()
 
 # Flask-Login configuration
 login_manager.login_view = 'auth.login'

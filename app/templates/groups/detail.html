@@ -46,6 +46,9 @@
                         {% endif %}
 
                         {% if is_member %}
+                            <a href="{{ url_for('messages.index', group_id=group.id) }}" class="btn btn-glass text-warning">
+                                <i class="bi bi-chat-dots-fill me-1"></i>Group Chat
+                            </a>
                             <a href="{{ url_for('questions.ask', group_id=group.id) }}" class="btn btn-glow">
                                 <i class="bi bi-plus-circle me-1"></i>Ask Question
                             </a>

@@ -40,7 +40,7 @@ def create_app(config_name=None):
 
 def _init_extensions(app):
     """Initialize Flask extensions."""
-    from app.extensions import db, migrate, login_manager, mail, csrf, cache
+    from app.extensions import db, migrate, login_manager, mail, csrf, cache, socketio
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -48,9 +48,10 @@ def _init_extensions(app):
     mail.init_app(app)
     csrf.init_app(app)
     cache.init_app(app)
+    socketio.init_app(app, cors_allowed_origins='*')
 
     with app.app_context():
-        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection  # noqa: F401
+        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection, Conversation, Message  # noqa: F401
 
 
 
@@ -65,6 +66,7 @@ def _register_blueprints(app):
     from app.api import api_bp
     from app.groups import groups_bp
     from app.connections import connections_bp
+    from app.messages import messages_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -75,6 +77,7 @@ def _register_blueprints(app):
     app.register_blueprint(api_bp)
     app.register_blueprint(groups_bp)
     app.register_blueprint(connections_bp)
+    app.register_blueprint(messages_bp)
 
 
 def _register_context_processors(app):
@@ -83,6 +86,7 @@ def _register_context_processors(app):
     def inject_globals():
         from flask_login import current_user
         from app.models.connection import Connection
+        from app.messages.services import get_unread_message_count
         context = {
             'app_name': 'StudyConnect',
             'subject_tags': app.config.get('SUBJECT_TAGS', []),
@@ -92,6 +96,7 @@ def _register_context_processors(app):
             context['user_points'] = current_user.total_points
             context['user_streak'] = current_user.current_streak
             context['pending_connections_count'] = Connection.query.filter_by(recipient_id=current_user.id, status='pending').count()
+            context['unread_messages_count'] = get_unread_message_count(current_user.id)
         return context
 
 

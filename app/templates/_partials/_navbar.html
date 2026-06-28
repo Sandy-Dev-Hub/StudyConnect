@@ -53,6 +53,18 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('messages.index') }}">
+                        <i class="bi bi-chat-dots-fill me-1"></i> Messages
+                        {% if current_user.is_authenticated and unread_messages_count and unread_messages_count > 0 %}
+                            <span id="navbar-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.65rem;">
+                                {{ unread_messages_count }}
+                            </span>
+                        {% else %}
+                            <span id="navbar-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark d-none" style="font-size: 0.65rem;">0</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('leaderboard.index') }}">
                         <i class="bi bi-trophy me-1"></i> Leaderboard
                     </a>

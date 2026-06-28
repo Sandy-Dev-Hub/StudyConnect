@@ -80,6 +80,11 @@
                                     <button type="submit" class="btn btn-outline-danger" title="Disconnect"><i class="bi bi-person-x"></i></button>
                                 </form>
                             {% endif %}
+                            {% if current_user.id != profile_user.id %}
+                                <a href="{{ url_for('messages.index', user_id=profile_user.id) }}" class="btn btn-glass">
+                                    <i class="bi bi-chat-dots me-1"></i>Message
+                                </a>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>

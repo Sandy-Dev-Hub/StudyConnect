@@ -15,8 +15,9 @@ else:
         load_dotenv(env_path)
 
 from app import create_app
+from app.extensions import socketio
 
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    socketio.run(app, debug=True, port=5000)
