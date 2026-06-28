@@ -51,7 +51,7 @@ def _init_extensions(app):
     socketio.init_app(app, cors_allowed_origins='*')
 
     with app.app_context():
-        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection, Conversation, Message  # noqa: F401
+        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection, Conversation, Message, StudyRequest  # noqa: F401
 
 
 
@@ -67,6 +67,7 @@ def _register_blueprints(app):
     from app.groups import groups_bp
     from app.connections import connections_bp
     from app.messages import messages_bp
+    from app.nearby import nearby_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -78,6 +79,7 @@ def _register_blueprints(app):
     app.register_blueprint(groups_bp)
     app.register_blueprint(connections_bp)
     app.register_blueprint(messages_bp)
+    app.register_blueprint(nearby_bp)
 
 
 def _register_context_processors(app):

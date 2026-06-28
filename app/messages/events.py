@@ -31,6 +31,11 @@ def handle_disconnect():
             if online_users[uid] <= 0:
                 del online_users[uid]
                 emit('user_status_change', {'user_id': uid, 'status': 'offline'}, broadcast=True)
+                try:
+                    from app.nearby.services import LocationService
+                    LocationService.stop_sharing(uid)
+                except Exception:
+                    pass
 
 @socketio.on('get_online_users')
 def handle_get_online():
