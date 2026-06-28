@@ -4,143 +4,308 @@
 {% block content %}
 <section class="content-section">
     <div class="container">
-        <div class="row g-4">
-            <!-- Profile Header -->
-            <div class="col-12">
-                <div class="glass-card profile-header animate-fade-in-up">
-                    <div class="row align-items-center">
-                        <div class="col-md-8 d-flex align-items-center">
-                            <div class="profile-avatar" style="background-color: {{ profile_user.avatar_color }}">
+        <!-- Profile Banner Card -->
+        <div class="glass-card mb-4 overflow-hidden p-0 animate-fade-in-up">
+            {% if profile and profile.banner_filename %}
+                <div class="w-100 position-relative" style="height: 220px; background: url('{{ url_for('static', filename='uploads/banners/' + profile.banner_filename) }}') center/cover no-repeat;">
+                    <div class="position-absolute bottom-0 start-0 w-100" style="height: 80px; background: linear-gradient(to top, rgba(17,17,16,0.9), transparent);"></div>
+                </div>
+            {% else %}
+                <div class="w-100" style="height: 140px; background: linear-gradient(135deg, rgba(234, 133, 40, 0.25) 0%, rgba(108, 99, 255, 0.15) 100%);"></div>
+            {% endif %}
+
+            <div class="p-4 p-md-5 pt-0 position-relative">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-4" style="margin-top: -50px;">
+                    <div class="d-flex flex-column flex-md-row align-items-md-end gap-4">
+                        <!-- Avatar -->
+                        {% if profile and profile.avatar_filename %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + profile.avatar_filename) }}"
+                                 alt="{{ profile_user.username }}" class="rounded-circle shadow border border-3 border-dark flex-shrink-0"
+                                 style="width: 120px; height: 120px; object-fit: cover; background: #111;">
+                        {% else %}
+                            <div class="profile-avatar shadow border border-3 border-dark flex-shrink-0 d-flex align-items-center justify-content-center"
+                                 style="width: 120px; height: 120px; font-size: 3rem; background-color: {{ profile_user.avatar_color }};">
                                 {{ profile_user.initials }}
                             </div>
-                            <div class="ms-4">
-                                <h2 class="mb-1">{{ profile_user.username }}</h2>
-                                {% if profile_user.bio %}
-                                    <p class="text-muted mb-2">{{ profile_user.bio }}</p>
+                        {% endif %}
+
+                        <!-- User Info -->
+                        <div class="mb-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h1 class="h2 mb-0 text-white">{{ profile_user.username }}</h1>
+                                {% if rank %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-trophy-fill me-1"></i>Rank #{{ rank }}</span>
                                 {% endif %}
-                                <div class="d-flex gap-3 flex-wrap">
-                                    <span class="profile-stat">
-                                        <i class="bi bi-calendar3 me-1"></i>
-                                        Joined {{ profile_user.created_at.strftime('%b %Y') }}
-                                    </span>
-                                    {% if profile_user.current_streak > 0 %}
-                                    <span class="profile-stat streak-active">
-                                        <i class="bi bi-fire streak-flame me-1"></i>
-                                        {{ profile_user.current_streak }} day streak
-                                    </span>
-                                    {% endif %}
-                                </div>
                             </div>
+                            <div class="text-muted small mt-1 d-flex flex-wrap gap-2 align-items-center">
+                                <span><i class="bi bi-calendar3 me-1"></i>Joined {{ profile_user.created_at.strftime('%B %Y') }}</span>
+                                {% if profile and profile.subject_tag %}
+                                    <span>&bull;</span>
+                                    <span class="badge bg-dark border border-secondary text-info">{{ profile.subject_tag }}</span>
+                                {% endif %}
+                                {% if profile and profile.exam_tag %}
+                                    <span>&bull;</span>
+                                    <span class="badge bg-dark border border-secondary text-warning">{{ profile.exam_tag }}</span>
+                                {% endif %}
+                            </div>
+                            {% if profile and profile.bio %}
+                                <p class="text-light mt-2 mb-0 max-w-lg" style="white-space: pre-wrap;">{{ profile.bio }}</p>
+                            {% endif %}
                         </div>
-                        <div class="col-md-4">
-                            <div class="profile-stats-grid">
-                                <div class="profile-stat-box">
-                                    <span class="profile-stat-number">{{ profile_user.total_points }}</span>
-                                    <span class="profile-stat-label">Points</span>
-                                </div>
-                                <div class="profile-stat-box">
-                                    <span class="profile-stat-number">{{ profile_user.question_count }}</span>
-                                    <span class="profile-stat-label">Questions</span>
-                                </div>
-                                <div class="profile-stat-box">
-                                    <span class="profile-stat-number">{{ profile_user.answer_count }}</span>
-                                    <span class="profile-stat-label">Answers</span>
-                                </div>
-                                <div class="profile-stat-box">
-                                    <span class="profile-stat-number">{{ profile_user.longest_streak }}</span>
-                                    <span class="profile-stat-label">Best Streak</span>
-                                </div>
-                            </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mb-2">
+                        {% if current_user.is_authenticated and current_user.id == profile_user.id %}
+                            <a href="{{ url_for('main.edit_profile') }}" class="btn btn-glow">
+                                <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="row g-3 mt-4 pt-3 border-top border-secondary border-opacity-25">
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 text-center">
+                            <span class="d-block h4 mb-0 text-warning">{{ profile_user.total_points }}</span>
+                            <span class="small text-muted">Current Points</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 text-center">
+                            <span class="d-block h4 mb-0 {% if profile_user.current_streak > 0 %}text-success{% else %}text-muted{% endif %}">
+                                <i class="bi bi-fire streak-flame"></i> {{ profile_user.current_streak }}d
+                            </span>
+                            <span class="small text-muted">Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 text-center">
+                            <span class="d-block h4 mb-0 text-light">{{ profile_user.longest_streak }}d</span>
+                            <span class="small text-muted">Longest Streak</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 text-center">
+                            <span class="d-block h4 mb-0 text-info">{{ profile_user.joined_groups_count }}</span>
+                            <span class="small text-muted">Groups Joined</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabs + Content -->
-            <div class="col-lg-8">
-                <!-- Tab Navigation -->
-                <ul class="nav nav-pills glass-tabs mb-3">
+            <!-- Tab Navigation -->
+            <div class="px-4 border-top border-secondary border-opacity-25 bg-dark bg-opacity-50">
+                <ul class="nav nav-pills py-2 gap-2 overflow-auto flex-nowrap">
                     <li class="nav-item">
-                        <a class="nav-link {% if tab == 'questions' %}active{% endif %}"
+                        <a class="nav-link text-nowrap {% if tab == 'questions' %}active btn-glow{% else %}text-muted{% endif %}"
                            href="{{ url_for('main.profile', user_id=profile_user.id, tab='questions') }}">
-                            <i class="bi bi-chat-square-text me-1"></i>Questions
+                            <i class="bi bi-patch-question me-1"></i>Questions Asked ({{ profile_user.question_count }})
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if tab == 'answers' %}active{% endif %}"
+                        <a class="nav-link text-nowrap {% if tab == 'answers' %}active btn-glow{% else %}text-muted{% endif %}"
                            href="{{ url_for('main.profile', user_id=profile_user.id, tab='answers') }}">
-                            <i class="bi bi-chat-left-text me-1"></i>Answers
+                            <i class="bi bi-chat-left-text me-1"></i>Answers Posted ({{ profile_user.answer_count }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-nowrap {% if tab == 'groups' %}active btn-glow{% else %}text-muted{% endif %}"
+                           href="{{ url_for('main.profile', user_id=profile_user.id, tab='groups') }}">
+                            <i class="bi bi-people me-1"></i>Groups Joined ({{ profile_user.joined_groups_count }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-nowrap {% if tab == 'timeline' %}active btn-glow{% else %}text-muted{% endif %}"
+                           href="{{ url_for('main.profile', user_id=profile_user.id, tab='timeline') }}">
+                            <i class="bi bi-clock-history me-1"></i>Activity Timeline
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-nowrap {% if tab == 'stats' %}active btn-glow{% else %}text-muted{% endif %}"
+                           href="{{ url_for('main.profile', user_id=profile_user.id, tab='stats') }}">
+                            <i class="bi bi-bar-chart me-1"></i>Contribution Stats
                         </a>
                     </li>
                 </ul>
-
-                <!-- Content -->
-                {% if tab == 'questions' %}
-                    {% if items.items %}
-                        {% for question in items.items %}
-                            {% include '_partials/_question_card.html' %}
-                        {% endfor %}
-                        {% set pagination = items %}
-                        {% include '_partials/_pagination.html' %}
-                    {% else %}
-                        <div class="glass-card text-center py-4">
-                            <i class="bi bi-chat-square-text display-4 text-muted mb-3"></i>
-                            <p class="text-muted">No questions posted yet.</p>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    {% if items.items %}
-                        {% for answer in items.items %}
-                        <div class="glass-card mb-3 animate-on-scroll">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <a href="{{ url_for('questions.detail', question_id=answer.question_id) }}" class="text-decoration-none">
-                                    <h5 class="mb-0 text-light">{{ answer.question.title }}</h5>
-                                </a>
-                                {% if answer.is_accepted %}
-                                    <span class="badge badge-resolved"><i class="bi bi-check-circle-fill me-1"></i>Accepted</span>
-                                {% endif %}
-                            </div>
-                            <div class="markdown-body small">
-                                {{ answer.body|markdown|safe }}
-                            </div>
-                            <div class="d-flex align-items-center mt-2 text-muted small">
-                                <span><i class="bi bi-hand-thumbs-up me-1"></i>{{ answer.score }} votes</span>
-                                <span class="ms-3"><i class="bi bi-clock me-1"></i>{{ answer.time_ago }}</span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                        {% set pagination = items %}
-                        {% include '_partials/_pagination.html' %}
-                    {% else %}
-                        <div class="glass-card text-center py-4">
-                            <i class="bi bi-chat-left-text display-4 text-muted mb-3"></i>
-                            <p class="text-muted">No answers posted yet.</p>
-                        </div>
-                    {% endif %}
-                {% endif %}
             </div>
+        </div>
 
-            <!-- Sidebar: Points History -->
-            <div class="col-lg-4">
-                <div class="glass-card">
-                    <h5 class="widget-title mb-3">
-                        <i class="bi bi-clock-history me-2"></i>Recent Points
-                    </h5>
-                    {% if points_history %}
-                        {% for log in points_history %}
-                        <div class="points-history-item">
-                            <div>
-                                <span class="{% if log.points > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">
-                                    {% if log.points > 0 %}+{% endif %}{{ log.points }}
-                                </span>
-                                <span class="text-muted small ms-2">{{ log.reason_label }}</span>
+        <!-- Tab Content -->
+        <div class="row g-4">
+            <div class="col-12">
+                {% if tab == 'questions' %}
+                    {% if items and items.items %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for question in items.items %}
+                                {% include '_partials/_question_card.html' %}
+                            {% endfor %}
+                        </div>
+                        {% set pagination = items %}
+                        {% include '_partials/_pagination.html' %}
+                    {% else %}
+                        <div class="glass-card text-center py-5">
+                            <i class="bi bi-patch-question display-4 text-muted mb-3 d-block"></i>
+                            <h4>No questions posted yet</h4>
+                            <p class="text-muted">When {{ profile_user.username }} asks questions, they will appear here.</p>
+                        </div>
+                    {% endif %}
+
+                {% elif tab == 'answers' %}
+                    {% if items and items.items %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for answer in items.items %}
+                            <div class="glass-card animate-on-scroll">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <a href="{{ url_for('questions.detail', question_id=answer.question_id) }}" class="text-decoration-none">
+                                        <h5 class="mb-0 text-light">{{ answer.question.title }}</h5>
+                                    </a>
+                                    {% if answer.is_accepted %}
+                                        <span class="badge badge-resolved"><i class="bi bi-check-circle-fill me-1"></i>Accepted</span>
+                                    {% endif %}
+                                </div>
+                                <div class="markdown-body small text-muted">
+                                    {{ answer.body|markdown|safe }}
+                                </div>
+                                <div class="d-flex align-items-center mt-3 pt-2 border-top border-secondary border-opacity-25 text-muted small">
+                                    <span><i class="bi bi-hand-thumbs-up me-1"></i>{{ answer.score }} votes</span>
+                                    <span class="ms-3"><i class="bi bi-clock me-1"></i>{{ answer.time_ago }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% set pagination = items %}
+                        {% include '_partials/_pagination.html' %}
+                    {% else %}
+                        <div class="glass-card text-center py-5">
+                            <i class="bi bi-chat-left-text display-4 text-muted mb-3 d-block"></i>
+                            <h4>No answers posted yet</h4>
+                            <p class="text-muted">When {{ profile_user.username }} helps others with answers, they will appear here.</p>
+                        </div>
+                    {% endif %}
+
+                {% elif tab == 'groups' %}
+                    {% if groups %}
+                        <div class="row g-3">
+                            {% for group in groups %}
+                            <div class="col-md-6 col-lg-4">
+                                <a href="{{ url_for('groups.detail', group_id=group.id) }}" class="text-decoration-none">
+                                    <div class="glass-card h-100 p-4 d-flex align-items-center gap-3">
+                                        <div class="nav-avatar flex-shrink-0" style="width: 50px; height: 50px; font-size: 1.2rem; background-color: {{ group.avatar_color }};">
+                                            {{ group.name[:2].upper() }}
+                                        </div>
+                                        <div class="overflow-hidden">
+                                            <h5 class="h6 mb-1 text-white text-truncate">{{ group.name }}</h5>
+                                            <span class="text-muted small"><i class="bi bi-people me-1"></i>{{ group.member_count }} Members</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="glass-card text-center py-5">
+                            <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
+                            <h4>No study groups joined</h4>
+                            <p class="text-muted">{{ profile_user.username }} hasn't joined any study communities yet.</p>
+                        </div>
+                    {% endif %}
+
+                {% elif tab == 'timeline' %}
+                    <div class="glass-card p-4">
+                        <h4 class="h5 mb-4"><i class="bi bi-activity me-2 text-warning"></i>Recent Activity Timeline</h4>
+                        {% if points_history %}
+                            <div class="d-flex flex-column gap-3">
+                                {% for log in points_history %}
+                                <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle p-2 d-flex align-items-center justify-content-center {% if log.points > 0 %}bg-success bg-opacity-25 text-success{% else %}bg-danger bg-opacity-25 text-danger{% endif %}" style="width: 40px; height: 40px;">
+                                            <i class="bi {% if log.points > 0 %}bi-plus-lg{% else %}bi-dash-lg{% endif %}"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-light fw-medium">{{ log.reason_label }}</div>
+                                            <div class="text-muted small">{{ log.created_at.strftime('%b %d, %Y at %H:%M') }}</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge {% if log.points > 0 %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                                        {% if log.points > 0 %}+{% endif %}{{ log.points }} pts
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center py-4 mb-0">No recorded timeline activity yet.</p>
+                        {% endif %}
+                    </div>
+
+                {% elif tab == 'stats' %}
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="glass-card p-4 h-100">
+                                <h4 class="h5 mb-4"><i class="bi bi-pie-chart me-2 text-warning"></i>Contribution Summary</h4>
+                                <ul class="list-unstyled d-flex flex-column gap-3 mb-0">
+                                    <li class="d-flex justify-content-between align-items-center p-2 rounded bg-dark bg-opacity-50">
+                                        <span class="text-muted"><i class="bi bi-question-circle me-2 text-light"></i>Questions Asked</span>
+                                        <strong class="text-white fs-5">{{ profile_user.question_count }}</strong>
+                                    </li>
+                                    <li class="d-flex justify-content-between align-items-center p-2 rounded bg-dark bg-opacity-50">
+                                        <span class="text-muted"><i class="bi bi-chat-dots me-2 text-light"></i>Answers Posted</span>
+                                        <strong class="text-white fs-5">{{ profile_user.answer_count }}</strong>
+                                    </li>
+                                    <li class="d-flex justify-content-between align-items-center p-2 rounded bg-dark bg-opacity-50">
+                                        <span class="text-muted"><i class="bi bi-check-circle me-2 text-success"></i>Accepted Answers</span>
+                                        <strong class="text-success fs-5">{{ profile_user.accepted_answers_count }}</strong>
+                                    </li>
+                                    <li class="d-flex justify-content-between align-items-center p-2 rounded bg-dark bg-opacity-50">
+                                        <span class="text-muted"><i class="bi bi-people me-2 text-info"></i>Communities Joined</span>
+                                        <strong class="text-info fs-5">{{ profile_user.joined_groups_count }}</strong>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted small">No points activity yet.</p>
-                    {% endif %}
-                </div>
+                        <div class="col-md-6">
+                            <div class="glass-card p-4 h-100">
+                                <h4 class="h5 mb-4"><i class="bi bi-lightning-charge me-2 text-warning"></i>Performance Metrics</h4>
+                                <div class="d-flex flex-column gap-4">
+                                    <div>
+                                        <div class="d-flex justify-content-between mb-1 small">
+                                            <span class="text-muted">Answer Acceptance Rate</span>
+                                            <strong class="text-white">
+                                                {% if profile_user.answer_count > 0 %}
+                                                    {{ ((profile_user.accepted_answers_count / profile_user.answer_count) * 100)|round|int }}%
+                                                {% else %}
+                                                    0%
+                                                {% endif %}
+                                            </strong>
+                                        </div>
+                                        <div class="progress bg-dark" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" role="progressbar"
+                                                 style="width: {% if profile_user.answer_count > 0 %}{{ (profile_user.accepted_answers_count / profile_user.answer_count) * 100 }}{% else %}0{% endif %}%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div class="d-flex justify-content-between mb-1 small">
+                                            <span class="text-muted">Study Streak Continuity</span>
+                                            <strong class="text-white">
+                                                {% if profile_user.longest_streak > 0 %}
+                                                    {{ ((profile_user.current_streak / profile_user.longest_streak) * 100)|round|int }}%
+                                                {% else %}
+                                                    0%
+                                                {% endif %}
+                                            </strong>
+                                        </div>
+                                        <div class="progress bg-dark" style="height: 8px;">
+                                            <div class="progress-bar bg-success" role="progressbar"
+                                                 style="width: {% if profile_user.longest_streak > 0 %}{{ (profile_user.current_streak / profile_user.longest_streak) * 100 }}{% else %}0{% endif %}%;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

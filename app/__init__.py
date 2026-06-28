@@ -50,7 +50,7 @@ def _init_extensions(app):
     cache.init_app(app)
 
     with app.app_context():
-        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember  # noqa: F401
+        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile  # noqa: F401
 
 
 

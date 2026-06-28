@@ -2,9 +2,13 @@
     <div class="glass-card question-card animate-on-scroll">
         <div class="question-card-header">
             <div class="d-flex align-items-center">
-                <div class="avatar-sm" style="background-color: {{ question.author.avatar_color }}">
-                    {{ question.author.initials }}
-                </div>
+                {% if question.author.profile and question.author.profile.avatar_filename %}
+                    <img src="{{ url_for('static', filename='uploads/avatars/' + question.author.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
+                {% else %}
+                    <div class="avatar-sm flex-shrink-0" style="background-color: {{ question.author.avatar_color }}">
+                        {{ question.author.initials }}
+                    </div>
+                {% endif %}
                 <div class="ms-2">
                     <span class="question-author">{{ question.author.username }}</span>
                     <span class="question-time">{{ question.time_ago }}</span>

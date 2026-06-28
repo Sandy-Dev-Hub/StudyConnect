@@ -38,6 +38,8 @@ class User(UserMixin, db.Model):
                                   cascade='all, delete-orphan')
     streak_logs = db.relationship('StudyStreak', backref='user', lazy='dynamic',
                                   cascade='all, delete-orphan')
+    profile = db.relationship('UserProfile', backref='user', uselist=False,
+                              cascade='all, delete-orphan')
 
     AVATAR_COLORS = [
         '#EA8528', '#6C63FF', '#FF6584', '#43E97B', '#F7971E',
@@ -80,6 +82,14 @@ class User(UserMixin, db.Model):
     @property
     def answer_count(self):
         return self.answers.count()
+
+    @property
+    def accepted_answers_count(self):
+        return self.answers.filter_by(is_accepted=True).count()
+
+    @property
+    def joined_groups_count(self):
+        return self.group_memberships.count()
 
     def update_streak(self):
         """Update the user's study streak based on the current date."""

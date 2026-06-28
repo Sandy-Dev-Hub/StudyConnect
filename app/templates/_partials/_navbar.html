@@ -92,9 +92,13 @@
                     <li class="nav-item dropdown ms-2">
                         <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#"
                            role="button" data-bs-toggle="dropdown">
-                            <div class="nav-avatar" style="background-color: {{ current_user.avatar_color }}">
-                                {{ current_user.initials }}
-                            </div>
+                            {% if current_user.profile and current_user.profile.avatar_filename %}
+                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 32px; height: 32px; object-fit: cover;">
+                            {% else %}
+                                <div class="nav-avatar" style="background-color: {{ current_user.avatar_color }}">
+                                    {{ current_user.initials }}
+                                </div>
+                            {% endif %}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end glass-dropdown">
                             <li class="dropdown-header">

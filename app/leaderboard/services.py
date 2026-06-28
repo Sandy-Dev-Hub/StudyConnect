@@ -141,3 +141,12 @@ def get_top_users(limit=10):
 
     cache.set(cache_key, top, timeout=120)
     return top
+
+
+def get_user_rank(user_id):
+    """Get the all-time rank of a specific user based on total_points."""
+    user = db.session.get(User, user_id)
+    if not user:
+        return None
+    rank = db.session.query(db.func.count(User.id)).filter(User.total_points > user.total_points).scalar()
+    return (rank or 0) + 1

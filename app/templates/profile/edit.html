@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container max-w-lg">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0"><i class="bi bi-pencil-square me-2 text-warning"></i>Edit Profile</h1>
+            <a href="{{ url_for('main.profile', user_id=current_user.id) }}" class="btn btn-glass btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Profile
+            </a>
+        </div>
+
+        <div class="glass-card p-4 p-md-5">
+            <form method="POST" enctype="multipart/form-data" novalidate>
+                {{ form.hidden_tag() }}
+
+                <!-- Avatar Upload Section -->
+                <div class="mb-4 text-center pb-4 border-bottom border-secondary border-opacity-25">
+                    <label class="form-label d-block text-muted mb-3">Current Profile Avatar</label>
+                    <div class="d-flex flex-column align-items-center gap-3">
+                        {% if profile.avatar_filename %}
+                            <img src="{{ url_for('static', filename='uploads/avatars/' + profile.avatar_filename) }}"
+                                 alt="Avatar" class="rounded-circle shadow border border-warning" style="width: 100px; height: 100px; object-fit: cover;">
+                        {% else %}
+                            <div class="nav-avatar d-flex align-items-center justify-content-center shadow" style="width: 100px; height: 100px; font-size: 2.5rem; background-color: {{ current_user.avatar_color }};">
+                                {{ current_user.initials }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="w-100 max-w-sm mx-auto">
+                            {{ form.avatar_file.label(class="form-label small text-light") }}
+                            {{ form.avatar_file(class="form-control form-control-sm bg-dark text-light border-secondary") }}
+                            {% if form.avatar_file.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.avatar_file.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Banner Upload Section -->
+                <div class="mb-4 pb-4 border-bottom border-secondary border-opacity-25">
+                    <label class="form-label text-muted mb-2">Profile Banner Image</label>
+                    {% if profile.banner_filename %}
+                        <div class="mb-3 rounded overflow-hidden border border-secondary border-opacity-25" style="height: 120px;">
+                            <img src="{{ url_for('static', filename='uploads/banners/' + profile.banner_filename) }}"
+                                 alt="Banner" class="w-100 h-100" style="object-fit: cover;">
+                        </div>
+                    {% else %}
+                        <div class="mb-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 d-flex align-items-center justify-content-center text-muted small" style="height: 100px;">
+                            <i class="bi bi-image me-2"></i>Default Dark Glass Banner
+                        </div>
+                    {% endif %}
+                    {{ form.banner_file.label(class="form-label small text-light") }}
+                    {{ form.banner_file(class="form-control form-control-sm bg-dark text-light border-secondary") }}
+                    {% if form.banner_file.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.banner_file.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Bio Section -->
+                <div class="mb-4">
+                    {{ form.bio.label(class="form-label text-light") }}
+                    {{ form.bio(class="form-control bg-dark text-light border-secondary") }}
+                    {% if form.bio.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.bio.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tags Section -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        {{ form.subject_tag.label(class="form-label text-light") }}
+                        {{ form.subject_tag(class="form-select bg-dark text-light border-secondary") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.exam_tag.label(class="form-label text-light") }}
+                        {{ form.exam_tag(class="form-select bg-dark text-light border-secondary") }}
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end pt-2">
+                    <a href="{{ url_for('main.profile', user_id=current_user.id) }}" class="btn btn-glass me-md-2">Cancel</a>
+                    <button type="submit" class="btn btn-glow px-4"><i class="bi bi-check-lg me-1"></i>Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
