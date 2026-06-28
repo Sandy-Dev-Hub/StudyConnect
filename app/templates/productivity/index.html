@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}Personal Pomodoro Timer — StudyConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pomodoro-container {
+        max-width: 650px;
+        margin: 40px auto;
+    }
+    .timer-card {
+        background: rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(234, 133, 40, 0.2);
+        border-radius: 24px;
+        padding: 40px 30px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .timer-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(234, 133, 40, 0.08) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .mode-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ccc;
+        border-radius: 30px;
+        padding: 8px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .mode-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+    .mode-btn.active {
+        background: #EA8528;
+        border-color: #EA8528;
+        color: #111;
+        font-weight: 600;
+        box-shadow: 0 0 15px rgba(234, 133, 40, 0.4);
+    }
+    .timer-display {
+        font-size: 5.5rem;
+        font-weight: 700;
+        font-family: 'Outfit', 'Inter', monospace;
+        color: #fff;
+        margin: 30px 0;
+        text-shadow: 0 0 25px rgba(234, 133, 40, 0.3);
+        letter-spacing: 2px;
+    }
+    .timer-display.running {
+        animation: pulse-timer 2s infinite ease-in-out;
+    }
+    @keyframes pulse-timer {
+        0%, 100% { text-shadow: 0 0 25px rgba(234, 133, 40, 0.3); }
+        50% { text-shadow: 0 0 40px rgba(234, 133, 40, 0.7); }
+    }
+    .control-btn {
+        min-width: 130px;
+        border-radius: 30px;
+        padding: 12px 28px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-start {
+        background: #EA8528;
+        color: #111;
+        border: none;
+        box-shadow: 0 4px 20px rgba(234, 133, 40, 0.4);
+    }
+    .btn-start:hover {
+        background: #f0953a;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(234, 133, 40, 0.6);
+        color: #111;
+    }
+    .subject-input-group {
+        max-width: 300px;
+        margin: 0 auto 25px auto;
+    }
+    .subject-input-group .form-control {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #fff;
+        border-radius: 20px;
+        text-align: center;
+    }
+    .subject-input-group .form-control:focus {
+        border-color: #EA8528;
+        box-shadow: 0 0 10px rgba(234, 133, 40, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="pomodoro-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="bi bi-clock-history text-warning me-2"></i>Personal Pomodoro</h2>
+                <p class="text-muted mb-0">Stay focused, build consistency, and earn +2 points per session.</p>
+            </div>
+            <div>
+                <button id="btn-notify-perm" class="btn btn-sm btn-outline-secondary rounded-pill" title="Enable Desktop Notifications">
+                    <i class="bi bi-bell me-1"></i> Notifications
+                </button>
+            </div>
+        </div>
+
+        <!-- Timer Card -->
+        <div class="timer-card">
+            <!-- Mode Buttons -->
+            <div class="d-flex justify-content-center gap-2 flex-wrap mb-4" role="group" aria-label="Timer modes">
+                <button type="button" class="mode-btn active" data-mode="focus" data-mins="25" id="btn-focus">Focus (25m)</button>
+                <button type="button" class="mode-btn" data-mode="break" data-mins="5" id="btn-short-break">Short Break (5m)</button>
+                <button type="button" class="mode-btn" data-mode="break" data-mins="15" id="btn-long-break">Long Break (15m)</button>
+                <button type="button" class="mode-btn" data-mode="custom" data-mins="20" id="btn-custom">Custom</button>
+            </div>
+
+            <!-- Subject Input -->
+            <div class="subject-input-group">
+                <input type="text" id="study-subject" class="form-control form-control-sm" placeholder="Subject / Topic (e.g. Calculus)" value="General">
+            </div>
+
+            <!-- Custom Duration Input Modal Trigger / Inline -->
+            <div id="custom-duration-wrapper" class="d-none mb-3">
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <label for="custom-mins" class="text-muted small">Duration (minutes):</label>
+                    <input type="number" id="custom-mins" class="form-control form-control-sm w-25 text-center bg-dark text-white border-secondary" min="1" max="180" value="20">
+                    <button id="btn-set-custom" class="btn btn-sm btn-outline-warning rounded-pill">Set</button>
+                </div>
+            </div>
+
+            <!-- Timer Display -->
+            <div id="timer-display" class="timer-display" role="timer" aria-live="polite">25:00</div>
+
+            <!-- Control Buttons -->
+            <div class="d-flex justify-content-center gap-3">
+                <button id="btn-start" class="btn control-btn btn-start">
+                    <i class="bi bi-play-fill me-1"></i> Start
+                </button>
+                <button id="btn-pause" class="btn control-btn btn-outline-light d-none">
+                    <i class="bi bi-pause-fill me-1"></i> Pause
+                </button>
+                <button id="btn-resume" class="btn control-btn btn-start d-none">
+                    <i class="bi bi-play-fill me-1"></i> Resume
+                </button>
+                <button id="btn-stop" class="btn control-btn btn-outline-danger d-none">
+                    <i class="bi bi-stop-fill me-1"></i> Stop
+                </button>
+                <button id="btn-reset" class="btn control-btn btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Session Philosophy Tip -->
+        <div class="mt-4 text-center">
+            <span class="badge bg-dark border border-secondary text-muted px-3 py-2 rounded-pill">
+                <i class="bi bi-info-circle text-warning me-1"></i> Note: Points (+2) and study streaks are only awarded after successful completion of a focus session.
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Reward Modal -->
+<div class="modal fade" id="rewardModal" tabindex="-1" aria-labelledby="rewardModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-card border-warning">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title fw-bold text-warning" id="rewardModalLabel"><i class="bi bi-trophy-fill me-2"></i>Focus Session Completed!</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="mb-3">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 3.5rem;"></i>
+        </div>
+        <h4 class="text-white mb-2" id="reward-message">Great job staying focused!</h4>
+        <p class="text-muted mb-4" id="reward-subtext">You completed your session.</p>
+        
+        <div class="d-flex justify-content-center gap-4 mb-2" id="reward-stats">
+            <div class="p-3 rounded bg-dark border border-secondary min-w-100">
+                <span class="d-block text-muted small">Points Earned</span>
+                <span class="fs-4 fw-bold text-warning" id="reward-points">+2</span>
+            </div>
+            <div class="p-3 rounded bg-dark border border-secondary min-w-100">
+                <span class="d-block text-muted small">Total Points</span>
+                <span class="fs-4 fw-bold text-white" id="reward-total-points">--</span>
+            </div>
+            <div class="p-3 rounded bg-dark border border-secondary min-w-100">
+                <span class="d-block text-muted small">Study Streak</span>
+                <span class="fs-4 fw-bold text-danger" id="reward-streak">-- 🔥</span>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer border-top border-secondary justify-content-center">
+        <button type="button" class="btn btn-warning rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Continue Studying</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const display = document.getElementById('timer-display');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnResume = document.getElementById('btn-resume');
+    const btnStop = document.getElementById('btn-stop');
+    const btnReset = document.getElementById('btn-reset');
+    const btnNotify = document.getElementById('btn-notify-perm');
+    const subjectInput = document.getElementById('study-subject');
+    const modeBtns = document.querySelectorAll('.mode-btn');
+    const customWrapper = document.getElementById('custom-duration-wrapper');
+    const customMinsInput = document.getElementById('custom-mins');
+    const btnSetCustom = document.getElementById('btn-set-custom');
+
+    let timerInterval = null;
+    let totalSeconds = 25 * 60;
+    let remainingSeconds = totalSeconds;
+    let currentMode = 'focus';
+    let durationMins = 25;
+    let isRunning = false;
+    let isPaused = false;
+    let saveInterval = null;
+
+    // Request desktop notifications
+    if (btnNotify) {
+        if (Notification.permission === 'granted') {
+            btnNotify.innerHTML = '<i class="bi bi-bell-fill text-warning me-1"></i> Enabled';
+            btnNotify.classList.replace('btn-outline-secondary', 'btn-outline-warning');
+        }
+        btnNotify.addEventListener('click', () => {
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') {
+                    btnNotify.innerHTML = '<i class="bi bi-bell-fill text-warning me-1"></i> Enabled';
+                    btnNotify.classList.replace('btn-outline-secondary', 'btn-outline-warning');
+                    new Notification('StudyConnect', { body: 'Desktop notifications enabled for study sessions!' });
+                }
+            });
+        });
+    }
+
+    // Audio Alert Beep using Web Audio API
+    function playAlarm() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2); // A5
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.8);
+        } catch (e) {
+            console.log('Audio alert blocked or unsupported');
+        }
+    }
+
+    function formatTime(secs) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+        display.textContent = formatTime(remainingSeconds);
+        document.title = `${formatTime(remainingSeconds)} — StudyConnect`;
+    }
+
+    function setButtonsState() {
+        if (!isRunning && !isPaused) {
+            btnStart.classList.remove('d-none');
+            btnPause.classList.add('d-none');
+            btnResume.classList.add('d-none');
+            btnStop.classList.add('d-none');
+            display.classList.remove('running');
+        } else if (isRunning) {
+            btnStart.classList.add('d-none');
+            btnPause.classList.remove('d-none');
+            btnResume.classList.add('d-none');
+            btnStop.classList.remove('d-none');
+            display.classList.add('running');
+        } else if (isPaused) {
+            btnStart.classList.add('d-none');
+            btnPause.classList.add('d-none');
+            btnResume.classList.remove('d-none');
+            btnStop.classList.remove('d-none');
+            display.classList.remove('running');
+        }
+    }
+
+    function saveStateToBackend() {
+        fetch('/productivity/api/timer/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+                status: isRunning ? 'running' : (isPaused ? 'paused' : 'idle'),
+                remaining_seconds: remainingSeconds,
+                duration_minutes: durationMins,
+                mode: currentMode,
+                subject: subjectInput.value || 'General'
+            })
+        }).catch(e => console.log('State save error', e));
+    }
+
+    function loadStateFromBackend() {
+        fetch('/productivity/api/timer/state')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.state) {
+                    const st = data.state;
+                    if (st.status === 'running' || st.status === 'paused') {
+                        remainingSeconds = st.remaining_seconds || (st.duration_minutes * 60);
+                        durationMins = st.duration_minutes || 25;
+                        currentMode = st.mode || 'focus';
+                        if (st.subject) subjectInput.value = st.subject;
+
+                        modeBtns.forEach(b => {
+                            b.classList.toggle('active', b.dataset.mode === currentMode && parseInt(b.dataset.mins) === durationMins);
+                        });
+
+                        updateDisplay();
+                        if (st.status === 'running') {
+                            startTimer(false);
+                        } else {
+                            isPaused = true;
+                            setButtonsState();
+                        }
+                    }
+                }
+            }).catch(e => console.log('State load error', e));
+    }
+
+    function completeSession() {
+        clearInterval(timerInterval);
+        clearInterval(saveInterval);
+        isRunning = false;
+        isPaused = false;
+        setButtonsState();
+        playAlarm();
+
+        if (Notification.permission === 'granted') {
+            new Notification('Session Completed!', {
+                body: `You completed your ${durationMins}m ${currentMode} session on ${subjectInput.value || 'General'}!`,
+                icon: '/static/favicon.ico'
+            });
+        }
+
+        fetch('/productivity/api/session/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+                duration_minutes: durationMins,
+                session_type: currentMode,
+                subject: subjectInput.value || 'General'
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const res = data.result;
+                if (currentMode === 'focus') {
+                    document.getElementById('reward-message').textContent = 'Great job staying focused!';
+                    document.getElementById('reward-subtext').textContent = `You completed ${durationMins} minutes of focus study.`;
+                    document.getElementById('reward-stats').classList.remove('d-none');
+                    document.getElementById('reward-points').textContent = `+${res.points_awarded}`;
+                    document.getElementById('reward-total-points').textContent = res.new_total_points;
+                    document.getElementById('reward-streak').textContent = `${res.current_streak} 🔥`;
+                } else {
+                    document.getElementById('reward-message').textContent = 'Break Ended!';
+                    document.getElementById('reward-subtext').textContent = 'Time to get back to studying.';
+                    document.getElementById('reward-stats').classList.add('d-none');
+                }
+                const modal = new bootstrap.Modal(document.getElementById('rewardModal'));
+                modal.show();
+            }
+            resetTimer();
+        });
+    }
+
+    function startTimer(triggerSave=true) {
+        if (remainingSeconds <= 0) remainingSeconds = durationMins * 60;
+        isRunning = true;
+        isPaused = false;
+        setButtonsState();
+
+        timerInterval = setInterval(() => {
+            remainingSeconds--;
+            updateDisplay();
+            if (remainingSeconds <= 0) {
+                completeSession();
+            }
+        }, 1000);
+
+        if (triggerSave) saveStateToBackend();
+        if (!saveInterval) {
+            saveInterval = setInterval(saveStateToBackend, 5000); // save every 5s
+        }
+    }
+
+    function pauseTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        isPaused = true;
+        setButtonsState();
+        saveStateToBackend();
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        clearInterval(saveInterval);
+        isRunning = false;
+        isPaused = false;
+        fetch('/productivity/api/timer/clear', { method: 'POST', headers: {'X-CSRFToken': csrfToken} });
+        resetTimer();
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        clearInterval(saveInterval);
+        isRunning = false;
+        isPaused = false;
+        remainingSeconds = durationMins * 60;
+        updateDisplay();
+        setButtonsState();
+        document.title = 'Personal Pomodoro — StudyConnect';
+    }
+
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (isRunning) return alert('Please stop or pause the active timer before switching modes.');
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMode = btn.dataset.mode;
+            if (currentMode === 'custom') {
+                customWrapper.classList.remove('d-none');
+            } else {
+                customWrapper.classList.add('d-none');
+                durationMins = parseInt(btn.dataset.mins);
+                resetTimer();
+            }
+        });
+    });
+
+    btnSetCustom?.addEventListener('click', () => {
+        const val = parseInt(customMinsInput.value);
+        if (val >= 1 && val <= 180) {
+            durationMins = val;
+            resetTimer();
+        }
+    });
+
+    btnStart.addEventListener('click', () => startTimer(true));
+    btnPause.addEventListener('click', pauseTimer);
+    btnResume.addEventListener('click', () => startTimer(true));
+    btnStop.addEventListener('click', stopTimer);
+    btnReset.addEventListener('click', stopTimer);
+
+    // Initial state load
+    loadStateFromBackend();
+});
+</script>
+{% endblock %}

@@ -9,5 +9,6 @@ from app.models.user_profile import UserProfile
 from app.models.connection import Connection
 from app.models.message import Conversation, Message
 from app.models.study_request import StudyRequest
+from app.models.study_session import StudySession
 
-__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message', 'StudyRequest']
+__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message', 'StudyRequest', 'StudySession']

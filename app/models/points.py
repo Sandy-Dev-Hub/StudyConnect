@@ -21,6 +21,7 @@ class PointsLog(db.Model):
     REASON_UPVOTE_REMOVED = 'upvote_removed'
     REASON_DOWNVOTE_REMOVED = 'downvote_removed'
     REASON_ACCEPTED_REMOVED = 'accepted_removed'
+    REASON_STUDY_SESSION = 'study_session'
 
     REASON_LABELS = {
         'answer_posted': 'Posted an answer',
@@ -30,6 +31,7 @@ class PointsLog(db.Model):
         'upvote_removed': 'Upvote removed',
         'downvote_removed': 'Downvote removed',
         'accepted_removed': 'Answer unaccepted',
+        'study_session': 'Completed a study focus session',
     }
 
     @property
