@@ -297,11 +297,10 @@
             window.socket.emit('join_nearby_feed');
 
             window.socket.on('location_started', (data) => {
-                if (isSharing && data.user_id !== {{ current_user.id }
-            }) {
-                fetchNearbyStudents();
-            }
-        });
+    if (isSharing && data.user_id !== {{ current_user.id }}) {
+        fetchNearbyStudents();
+    }
+   });
 
     window.socket.on('location_stopped', (data) => {
         if (peerMarkers[data.user_id]) {
