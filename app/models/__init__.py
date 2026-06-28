@@ -4,5 +4,6 @@ from app.models.answer import Answer
 from app.models.vote import Vote
 from app.models.points import PointsLog
 from app.models.streak import StudyStreak
+from app.models.group import StudyGroup, GroupMember
 
-__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak']
+__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember']

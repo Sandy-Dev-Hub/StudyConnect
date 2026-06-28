@@ -40,7 +40,7 @@ class User(UserMixin, db.Model):
                                   cascade='all, delete-orphan')
 
     AVATAR_COLORS = [
-        '#6C63FF', '#FF6584', '#43E97B', '#F7971E',
+        '#EA8528', '#6C63FF', '#FF6584', '#43E97B', '#F7971E',
         '#00D2FF', '#A855F7', '#EC4899', '#14B8A6',
         '#F59E0B', '#8B5CF6', '#EF4444', '#10B981',
     ]

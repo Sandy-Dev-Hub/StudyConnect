@@ -40,6 +40,9 @@
                         {% if question.exam_tag %}
                             <span class="tag tag-exam">{{ question.exam_tag }}</span>
                         {% endif %}
+                        {% if question.study_group %}
+                            <a href="{{ url_for('groups.detail', group_id=question.study_group.id) }}" class="tag bg-info bg-opacity-25 text-info border border-info border-opacity-25 text-decoration-none"><i class="bi bi-people me-1"></i>{{ question.study_group.name }}</a>
+                        {% endif %}
                     </div>
 
                     <div class="markdown-body">

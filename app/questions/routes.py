@@ -41,6 +41,7 @@ def feed():
 @questions_bp.route('/ask', methods=['GET', 'POST'])
 @login_required
 def ask():
+    group_id = request.args.get('group_id', type=int)
     form = QuestionForm()
     if form.validate_on_submit():
         image_file = form.image.data if form.image.data and form.image.data.filename else None
@@ -51,16 +52,19 @@ def ask():
             subject_tag=form.subject_tag.data,
             exam_tag=form.exam_tag.data,
             author_id=current_user.id,
-            image_file=image_file
+            image_file=image_file,
+            study_group_id=group_id
         )
 
         # Record activity for streak
         record_activity(current_user, 'question')
 
         flash('Your question has been posted!', 'success')
+        if group_id:
+            return redirect(url_for('groups.detail', group_id=group_id, tab='questions'))
         return redirect(url_for('questions.detail', question_id=question.id))
 
-    return render_template('questions/ask.html', form=form)
+    return render_template('questions/ask.html', form=form, group_id=group_id)
 
 
 @questions_bp.route('/<int:question_id>')

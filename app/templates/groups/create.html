@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Create Community — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="glass-card animate-fade-in-up">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="auth-icon me-3" style="width:48px;height:48px;font-size:1.2rem">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-0">Start a Study Community</h2>
+                            <p class="text-muted mb-0 small">Create a dedicated space to learn and collaborate</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('groups.create') }}" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">{{ form.name.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control glass-input" + (" is-invalid" if form.name.errors else ""), id="name") }}
+                            {% for error in form.name.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">{{ form.description.label.text }}</label>
+                            {{ form.description(class="form-control glass-input" + (" is-invalid" if form.description.errors else ""), id="description") }}
+                            <div class="form-text">Explain what students will get out of joining this group.</div>
+                            {% for error in form.description.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="subject_tag" class="form-label">{{ form.subject_tag.label.text }}</label>
+                                {{ form.subject_tag(class="form-select glass-input", id="subject_tag") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="exam_tag" class="form-label">{{ form.exam_tag.label.text }}</label>
+                                {{ form.exam_tag(class="form-select glass-input", id="exam_tag") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="avatar_color" class="form-label">{{ form.avatar_color.label.text }}</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                {% for value, label in form.avatar_color.choices %}
+                                <label class="btn btn-outline-secondary p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; border-radius: 50%; background-color: {{ value }}; cursor: pointer;">
+                                    <input type="radio" name="avatar_color" value="{{ value }}" {% if form.avatar_color.data == value or (not form.avatar_color.data and loop.first) %}checked{% endif %} class="d-none">
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch glass-card p-3 d-flex align-items-center gap-3">
+                                {{ form.is_private(class="form-check-input ms-0", style="width: 3em; height: 1.5em; cursor: pointer;", id="is_private") }}
+                                <label class="form-check-label mb-0" for="is_private" style="cursor: pointer;">
+                                    <strong>Private Community</strong><br>
+                                    <small class="text-muted">Only members will be able to view discussions and ask questions</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-3">
+                            <button type="submit" class="btn btn-glow btn-lg flex-grow-1">
+                                <i class="bi bi-check2-circle me-2"></i>Create Community
+                            </button>
+                            <a href="{{ url_for('groups.index') }}" class="btn btn-glass btn-lg">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

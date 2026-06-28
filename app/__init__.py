@@ -49,9 +49,8 @@ def _init_extensions(app):
     csrf.init_app(app)
     cache.init_app(app)
 
-    # Import models so SQLAlchemy knows about them in migrations
     with app.app_context():
-        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak  # noqa: F401
+        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember  # noqa: F401
 
 
 
@@ -64,6 +63,7 @@ def _register_blueprints(app):
     from app.points import points_bp
     from app.leaderboard import leaderboard_bp
     from app.api import api_bp
+    from app.groups import groups_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -72,6 +72,7 @@ def _register_blueprints(app):
     app.register_blueprint(points_bp)
     app.register_blueprint(leaderboard_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(groups_bp)
 
 
 def _register_context_processors(app):

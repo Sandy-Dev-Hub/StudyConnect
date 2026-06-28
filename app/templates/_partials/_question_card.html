@@ -26,6 +26,9 @@
                 {% if question.exam_tag %}
                     <span class="tag tag-exam">{{ question.exam_tag }}</span>
                 {% endif %}
+                {% if question.study_group %}
+                    <span class="tag bg-info bg-opacity-25 text-info border border-info border-opacity-25"><i class="bi bi-people me-1"></i>{{ question.study_group.name }}</span>
+                {% endif %}
             </div>
             <div class="question-stats">
                 <span class="stat-item" title="Answers">

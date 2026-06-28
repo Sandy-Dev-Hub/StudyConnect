@@ -51,7 +51,7 @@ def delete_image(filename):
             os.remove(filepath)
 
 
-def create_question(title, body, subject_tag, exam_tag, author_id, image_file=None):
+def create_question(title, body, subject_tag, exam_tag, author_id, image_file=None, study_group_id=None):
     """Create a new question and return it."""
     image_filename = save_image(image_file) if image_file else None
 
@@ -61,7 +61,8 @@ def create_question(title, body, subject_tag, exam_tag, author_id, image_file=No
         subject_tag=subject_tag,
         exam_tag=exam_tag if exam_tag else None,
         image_filename=image_filename,
-        author_id=author_id
+        author_id=author_id,
+        study_group_id=study_group_id
     )
     db.session.add(question)
     db.session.commit()
