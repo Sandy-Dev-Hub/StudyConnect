@@ -103,6 +103,11 @@
                             <i class="bi bi-megaphone me-1"></i>Announcements
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if tab == 'focus_room' %}active btn-glow{% else %}text-muted{% endif %}" href="{{ url_for('groups.detail', group_id=group.id, tab='focus_room') }}">
+                            <i class="bi bi-clock-history me-1 text-warning"></i>Focus Room
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -252,8 +257,138 @@
                         {% endif %}
                     </div>
                 </div>
+
+            {% elif tab == 'focus_room' %}
+                <div class="col-12">
+                    <div class="glass-card p-5 text-center position-relative overflow-hidden">
+                        <div class="mb-3">
+                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold"><i class="bi bi-broadcast me-1"></i>Synchronized Group Room</span>
+                        </div>
+                        <h2 class="h3 text-white mb-2">{{ group.name }} Focus Room</h2>
+                        <p class="text-muted max-w-md mx-auto mb-4">Study together in real-time. When the timer finishes, all participating members earn points toward their productivity stats!</p>
+
+                        <div class="py-4 my-3 rounded" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(234, 133, 40, 0.3); max-width: 500px; margin: 0 auto;">
+                            <div id="grp-status-badge" class="badge bg-secondary mb-2">Idle</div>
+                            <div id="grp-timer-display" class="font-monospace text-white fw-bold" style="font-size: 4.5rem; letter-spacing: 2px;">25:00</div>
+                            <div id="grp-subject-display" class="text-warning small mt-1">Topic: Group Study</div>
+                        </div>
+
+                        {% if is_admin %}
+                        <div class="d-flex justify-content-center gap-2 flex-wrap my-4">
+                            <button id="grp-btn-start-focus" class="btn btn-glow px-4"><i class="bi bi-play-fill me-1"></i>Start Focus (25m)</button>
+                            <button id="grp-btn-start-break" class="btn btn-outline-light px-3"><i class="bi bi-cup-hot me-1"></i>Start Break (5m)</button>
+                            <button id="grp-btn-pause" class="btn btn-outline-warning px-3 d-none"><i class="bi bi-pause-fill me-1"></i>Pause</button>
+                            <button id="grp-btn-resume" class="btn btn-glow px-3 d-none"><i class="bi bi-play-fill me-1"></i>Resume</button>
+                            <button id="grp-btn-stop" class="btn btn-outline-danger px-3 d-none"><i class="bi bi-stop-fill me-1"></i>Stop</button>
+                        </div>
+                        {% else %}
+                        <p class="text-muted small my-4"><i class="bi bi-lock me-1"></i>Only group owners or moderators can control the synchronized timer. Sit back and focus!</p>
+                        {% endif %}
+
+                        <div class="border-top border-secondary pt-4 mt-4 max-w-md mx-auto">
+                            <h5 class="h6 text-muted mb-2"><i class="bi bi-people-fill me-2 text-warning"></i>Connected Study Partners</h5>
+                            <div id="grp-members-list" class="d-flex justify-content-center gap-2 flex-wrap">
+                                <span class="badge bg-dark border border-secondary text-light px-3 py-2">{{ current_user.username }} (You)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
 </section>
+
+{% if tab == 'focus_room' %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const groupId = {{ group.id }};
+    const isAdmin = {{ 'true' if is_admin else 'false' }};
+    const display = document.getElementById('grp-timer-display');
+    const badge = document.getElementById('grp-status-badge');
+    const subjectDisp = document.getElementById('grp-subject-display');
+    const btnFocus = document.getElementById('grp-btn-start-focus');
+    const btnBreak = document.getElementById('grp-btn-start-break');
+    const btnPause = document.getElementById('grp-btn-pause');
+    const btnResume = document.getElementById('grp-btn-resume');
+    const btnStop = document.getElementById('grp-btn-stop');
+
+    function formatTime(secs) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function updateUI(state) {
+        if (!state) return;
+        display.textContent = formatTime(state.remaining_seconds || 0);
+        subjectDisp.textContent = `Topic: ${state.subject || 'Group Study'}`;
+
+        if (state.status === 'running') {
+            badge.textContent = `${state.mode === 'focus' ? '🎯 Focusing' : '☕ On Break'}`;
+            badge.className = 'badge bg-success mb-2';
+            if (isAdmin) {
+                btnFocus?.classList.add('d-none');
+                btnBreak?.classList.add('d-none');
+                btnPause?.classList.remove('d-none');
+                btnResume?.classList.add('d-none');
+                btnStop?.classList.remove('d-none');
+            }
+        } else if (state.status === 'paused') {
+            badge.textContent = '⏸️ Paused';
+            badge.className = 'badge bg-warning text-dark mb-2';
+            if (isAdmin) {
+                btnFocus?.classList.add('d-none');
+                btnBreak?.classList.add('d-none');
+                btnPause?.classList.add('d-none');
+                btnResume?.classList.remove('d-none');
+                btnStop?.classList.remove('d-none');
+            }
+        } else {
+            badge.textContent = 'Idle';
+            badge.className = 'badge bg-secondary mb-2';
+            if (isAdmin) {
+                btnFocus?.classList.remove('d-none');
+                btnBreak?.classList.remove('d-none');
+                btnPause?.classList.add('d-none');
+                btnResume?.classList.add('d-none');
+                btnStop?.classList.add('d-none');
+            }
+        }
+    }
+
+    const socket = io();
+    socket.on('connect', () => {
+        socket.emit('join_group_timer', { group_id: groupId });
+    });
+
+    socket.on('timer_state_sync', state => updateUI(state));
+    socket.on('timer_started', state => updateUI(state));
+    socket.on('timer_paused', state => updateUI(state));
+    socket.on('timer_resumed', state => updateUI(state));
+    socket.on('timer_stopped', state => updateUI(state));
+    socket.on('countdown_tick', data => {
+        if (data && data.remaining_seconds !== undefined) {
+            display.textContent = formatTime(data.remaining_seconds);
+        }
+    });
+    socket.on('session_completed', data => {
+        updateUI({ status: 'idle', remaining_seconds: 0, mode: data.mode });
+        alert(`Group ${data.mode} session completed!`);
+    });
+
+    if (isAdmin) {
+        btnFocus?.addEventListener('click', () => socket.emit('start_group_timer', { group_id: groupId, duration_minutes: 25, mode: 'focus', subject: 'Group Focus' }));
+        btnBreak?.addEventListener('click', () => socket.emit('start_group_timer', { group_id: groupId, duration_minutes: 5, mode: 'break', subject: 'Group Break' }));
+        btnPause?.addEventListener('click', () => socket.emit('pause_group_timer', { group_id: groupId }));
+        btnResume?.addEventListener('click', () => socket.emit('resume_group_timer', { group_id: groupId }));
+        btnStop?.addEventListener('click', () => socket.emit('stop_group_timer', { group_id: groupId }));
+    }
+
+    window.addEventListener('beforeunload', () => {
+        socket.emit('leave_group_timer', { group_id: groupId });
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

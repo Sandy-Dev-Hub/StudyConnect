@@ -10,5 +10,6 @@ from app.models.connection import Connection
 from app.models.message import Conversation, Message
 from app.models.study_request import StudyRequest
 from app.models.study_session import StudySession
+from app.models.pomodoro_room import PomodoroRoom
 
-__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message', 'StudyRequest', 'StudySession']
+__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message', 'StudyRequest', 'StudySession', 'PomodoroRoom']
