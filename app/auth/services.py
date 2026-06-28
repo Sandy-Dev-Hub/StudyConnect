@@ -1,3 +1,4 @@
+import sys
 from flask import current_app, url_for, render_template
 from flask_mail import Message
 
@@ -18,12 +19,18 @@ def send_verification_email(user):
 
     if current_app.config.get('MAIL_SUPPRESS_SEND') or current_app.config.get('DEBUG'):
         current_app.logger.info(f'[EMAIL] Verification link for {user.email}: {verify_url}')
-        print("\n" + "-" * 60)
-        print(f"[EMAIL] Verification link for {user.email}:\n")
-        print(f"{verify_url}")
-        print("-" * 60 + "\n", flush=True)
-        if not current_app.config.get('MAIL_SUPPRESS_SEND'):
-            mail.send(msg)
+        if hasattr(sys.stdout, 'reconfigure'):
+            try:
+                sys.stdout.reconfigure(encoding='utf-8')
+            except Exception:
+                pass
+        print("\n" + "=" * 60)
+        print("📧 EMAIL VERIFICATION\n")
+        print("User:")
+        print(f"{user.email}\n")
+        print("Verification URL:\n")
+        print(f"{verify_url}\n")
+        print("=" * 60 + "\n", flush=True)
     else:
         mail.send(msg)
 
@@ -42,11 +49,17 @@ def send_reset_email(user):
 
     if current_app.config.get('MAIL_SUPPRESS_SEND') or current_app.config.get('DEBUG'):
         current_app.logger.info(f'[EMAIL] Password reset link for {user.email}: {reset_url}')
-        print("\n" + "-" * 60)
-        print(f"[EMAIL] Password reset link for {user.email}:\n")
-        print(f"{reset_url}")
-        print("-" * 60 + "\n", flush=True)
-        if not current_app.config.get('MAIL_SUPPRESS_SEND'):
-            mail.send(msg)
+        if hasattr(sys.stdout, 'reconfigure'):
+            try:
+                sys.stdout.reconfigure(encoding='utf-8')
+            except Exception:
+                pass
+        print("\n" + "=" * 60)
+        print("📧 PASSWORD RESET\n")
+        print("User:")
+        print(f"{user.email}\n")
+        print("Reset URL:\n")
+        print(f"{reset_url}\n")
+        print("=" * 60 + "\n", flush=True)
     else:
         mail.send(msg)

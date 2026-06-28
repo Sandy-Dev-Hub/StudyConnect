@@ -20,7 +20,7 @@ def register():
             email=form.email.data.lower().strip()
         )
         user.set_password(form.password.data)
-        if current_app.config.get('DEBUG') and current_app.config.get('DEV_AUTO_VERIFY_USERS'):
+        if current_app.config.get('DEBUG') and current_app.config.get('AUTO_VERIFY_USERS'):
             user.is_verified = True
             db.session.add(user)
             db.session.commit()

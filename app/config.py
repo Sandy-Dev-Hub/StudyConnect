@@ -22,7 +22,7 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'StudyConnect <noreply@studyconnect.com>')
     MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', '1') == '1'
-    DEV_AUTO_VERIFY_USERS = os.environ.get('DEV_AUTO_VERIFY_USERS', '0') == '1'
+    AUTO_VERIFY_USERS = os.environ.get('AUTO_VERIFY_USERS', '0') == '1'
 
     # Redis / Cache
     REDIS_URL = os.environ.get('REDIS_URL', '')
