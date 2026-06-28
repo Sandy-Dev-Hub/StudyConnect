@@ -16,8 +16,14 @@ def send_verification_email(user):
         body=f'Hi {user.username},\n\nPlease verify your email by visiting: {verify_url}\n\nThis link expires in 1 hour.\n\n— StudyConnect'
     )
 
-    if current_app.config.get('MAIL_SUPPRESS_SEND'):
+    if current_app.config.get('MAIL_SUPPRESS_SEND') or current_app.config.get('DEBUG'):
         current_app.logger.info(f'[EMAIL] Verification link for {user.email}: {verify_url}')
+        print("\n" + "-" * 60)
+        print(f"[EMAIL] Verification link for {user.email}:\n")
+        print(f"{verify_url}")
+        print("-" * 60 + "\n", flush=True)
+        if not current_app.config.get('MAIL_SUPPRESS_SEND'):
+            mail.send(msg)
     else:
         mail.send(msg)
 
@@ -34,7 +40,13 @@ def send_reset_email(user):
         body=f'Hi {user.username},\n\nReset your password by visiting: {reset_url}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\n— StudyConnect'
     )
 
-    if current_app.config.get('MAIL_SUPPRESS_SEND'):
+    if current_app.config.get('MAIL_SUPPRESS_SEND') or current_app.config.get('DEBUG'):
         current_app.logger.info(f'[EMAIL] Password reset link for {user.email}: {reset_url}')
+        print("\n" + "-" * 60)
+        print(f"[EMAIL] Password reset link for {user.email}:\n")
+        print(f"{reset_url}")
+        print("-" * 60 + "\n", flush=True)
+        if not current_app.config.get('MAIL_SUPPRESS_SEND'):
+            mail.send(msg)
     else:
         mail.send(msg)

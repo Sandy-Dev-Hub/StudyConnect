@@ -20,12 +20,16 @@ def register():
             email=form.email.data.lower().strip()
         )
         user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-
-        send_verification_email(user)
-
-        flash('Account created! Check your email (or console) for a verification link.', 'success')
+        if current_app.config.get('DEBUG') and current_app.config.get('DEV_AUTO_VERIFY_USERS'):
+            user.is_verified = True
+            db.session.add(user)
+            db.session.commit()
+            flash('Account created and automatically verified (Development Mode)! You can log in now.', 'success')
+        else:
+            db.session.add(user)
+            db.session.commit()
+            send_verification_email(user)
+            flash('Account created! Check your email (or console) for a verification link.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html', form=form)
