@@ -2,9 +2,11 @@ import logging
 from datetime import datetime, timezone
 from app.extensions import db
 from app.models.study_session import StudySession
+from app.models.study_goal import StudyGoal
 from app.models.points import PointsLog
 from app.points.services import award_points, record_activity
 from app.productivity.timers import PersonalTimerStorage
+from app.productivity.analytics import AnalyticsService
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,14 @@ class ProductivityService:
 
             # Record study streak activity
             record_activity(user, 'study_session')
+
+            # Update active uncompleted study goals
+            active_goals = StudyGoal.query.filter_by(user_id=user.id, completed=False).all()
+            for goal in active_goals:
+                goal.add_progress(duration_minutes)
+
+            # Invalidate memoized analytics cache
+            AnalyticsService.invalidate_cache(user.id)
 
             logger.info(f"[PRODUCTIVITY LOG] action=focus_completed user_id={user.id} duration={duration_minutes}m points=+2")
         else:

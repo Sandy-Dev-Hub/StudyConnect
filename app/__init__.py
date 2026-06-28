@@ -51,7 +51,7 @@ def _init_extensions(app):
     socketio.init_app(app, cors_allowed_origins='*')
 
     with app.app_context():
-        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection, Conversation, Message, StudyRequest, StudySession, PomodoroRoom  # noqa: F401
+        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection, Conversation, Message, StudyRequest, StudySession, PomodoroRoom, StudyGoal  # noqa: F401
 
 
 
