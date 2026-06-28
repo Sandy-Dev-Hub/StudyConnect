@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% block title %}Study Network — StudyConnect{% endblock %}
+
+{% block content %}
+<section class="content-section">
+    <div class="container">
+        <!-- Hero Header -->
+        <div class="glass-card mb-4 p-4 p-md-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4 animate-fade-in-up" style="background: linear-gradient(135deg, rgba(234, 133, 40, 0.15) 0%, rgba(108, 99, 255, 0.1) 100%);">
+            <div>
+                <h1 class="h2 text-white mb-2"><i class="bi bi-people-fill me-2 text-warning"></i>My Study Network</h1>
+                <p class="text-muted mb-0 max-w-lg">Connect with ambitious peers, collaborate on study doubts, and grow your peer network across exams and subjects.</p>
+            </div>
+            <div class="d-flex gap-3 text-center">
+                <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 px-4">
+                    <span class="d-block h3 mb-0 text-white">{{ connections|length }}</span>
+                    <span class="small text-muted">Connections</span>
+                </div>
+                <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 px-4">
+                    <span class="d-block h3 mb-0 text-warning">{{ pending|length }}</span>
+                    <span class="small text-muted">Pending</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-pills glass-tabs mb-4 gap-2">
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'connections' %}active btn-glow{% else %}text-muted{% endif %}" href="{{ url_for('connections.index', tab='connections') }}">
+                    <i class="bi bi-person-check me-1"></i>Connected Peers ({{ connections|length }})
+                </a>
+            </li>
+            <li class="nav-item position-relative">
+                <a class="nav-link {% if tab == 'pending' %}active btn-glow{% else %}text-muted{% endif %}" href="{{ url_for('connections.index', tab='pending') }}">
+                    <i class="bi bi-person-exclamation me-1"></i>Pending Requests
+                    {% if pending|length > 0 %}
+                        <span class="badge bg-danger ms-1">{{ pending|length }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'recommendations' %}active btn-glow{% else %}text-muted{% endif %}" href="{{ url_for('connections.index', tab='recommendations') }}">
+                    <i class="bi bi-stars me-1"></i>Recommended Peers
+                </a>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="row g-4">
+            {% if tab == 'connections' %}
+                {% if connections %}
+                    {% for peer in connections %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="glass-card h-100 p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <a href="{{ url_for('main.profile', user_id=peer.id) }}">
+                                        {% if peer.profile and peer.profile.avatar_filename %}
+                                            <img src="{{ url_for('static', filename='uploads/avatars/' + peer.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 54px; height: 54px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="nav-avatar d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px; font-size: 1.5rem; background-color: {{ peer.avatar_color }};">
+                                                {{ peer.initials }}
+                                            </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="overflow-hidden">
+                                        <h4 class="h6 mb-1 text-truncate">
+                                            <a href="{{ url_for('main.profile', user_id=peer.id) }}" class="text-white">{{ peer.username }}</a>
+                                        </h4>
+                                        <span class="badge bg-dark border border-secondary text-muted small"><i class="bi bi-star-fill text-warning me-1"></i>{{ peer.total_points }} pts</span>
+                                    </div>
+                                </div>
+                                {% if peer.profile and peer.profile.bio %}
+                                    <p class="text-muted small mb-3 text-truncate">{{ peer.profile.bio }}</p>
+                                {% endif %}
+                                <div class="d-flex flex-wrap gap-1 mb-3">
+                                    {% if peer.profile and peer.profile.subject_tag %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-info small">{{ peer.profile.subject_tag }}</span>
+                                    {% endif %}
+                                    {% if peer.profile and peer.profile.exam_tag %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-warning small">{{ peer.profile.exam_tag }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('main.profile', user_id=peer.id) }}" class="btn btn-glass btn-sm">View Profile</a>
+                                <form method="POST" action="{{ url_for('connections.remove', user_id=peer.id) }}" onsubmit="return confirm('Remove {{ peer.username }} from your network?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Disconnect"><i class="bi bi-person-x"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="glass-card p-5 text-center">
+                            <i class="bi bi-people display-4 text-muted mb-3 d-block"></i>
+                            <h4>No connected peers yet</h4>
+                            <p class="text-muted">Explore recommendations to build your study peer network.</p>
+                            <a href="{{ url_for('connections.index', tab='recommendations') }}" class="btn btn-glow mt-2">Find Peers</a>
+                        </div>
+                    </div>
+                {% endif %}
+
+            {% elif tab == 'pending' %}
+                {% if pending %}
+                    {% for req in pending %}
+                    <div class="col-md-6">
+                        <div class="glass-card p-4 d-flex align-items-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-3 overflow-hidden">
+                                <a href="{{ url_for('main.profile', user_id=req.requester.id) }}">
+                                    {% if req.requester.profile and req.requester.profile.avatar_filename %}
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + req.requester.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="nav-avatar d-flex align-items-center justify-content-center flex-shrink-0" style="width: 50px; height: 50px; font-size: 1.3rem; background-color: {{ req.requester.avatar_color }};">
+                                            {{ req.requester.initials }}
+                                        </div>
+                                    {% endif %}
+                                </a>
+                                <div class="overflow-hidden">
+                                    <h4 class="h6 mb-1 text-truncate">
+                                        <a href="{{ url_for('main.profile', user_id=req.requester.id) }}" class="text-white">{{ req.requester.username }}</a>
+                                    </h4>
+                                    <span class="text-muted small"><i class="bi bi-clock me-1"></i>Sent {{ req.created_at.strftime('%b %d') }}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                <form method="POST" action="{{ url_for('connections.accept', connection_id=req.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-glow btn-sm"><i class="bi bi-check-lg me-1"></i>Accept</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('connections.reject', connection_id=req.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-glass btn-sm text-danger"><i class="bi bi-x-lg"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="glass-card p-5 text-center">
+                            <i class="bi bi-person-check display-4 text-muted mb-3 d-block"></i>
+                            <h4>No pending requests</h4>
+                            <p class="text-muted">You have no unanswered connection requests.</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+            {% elif tab == 'recommendations' %}
+                {% if recommendations %}
+                    {% for cand in recommendations %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="glass-card h-100 p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <a href="{{ url_for('main.profile', user_id=cand.id) }}">
+                                        {% if cand.profile and cand.profile.avatar_filename %}
+                                            <img src="{{ url_for('static', filename='uploads/avatars/' + cand.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 54px; height: 54px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="nav-avatar d-flex align-items-center justify-content-center flex-shrink-0" style="width: 54px; height: 54px; font-size: 1.5rem; background-color: {{ cand.avatar_color }};">
+                                                {{ cand.initials }}
+                                            </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="overflow-hidden">
+                                        <h4 class="h6 mb-1 text-truncate">
+                                            <a href="{{ url_for('main.profile', user_id=cand.id) }}" class="text-white">{{ cand.username }}</a>
+                                        </h4>
+                                        <span class="badge bg-dark border border-secondary text-muted small"><i class="bi bi-star-fill text-warning me-1"></i>{{ cand.total_points }} pts</span>
+                                    </div>
+                                </div>
+                                {% if cand.profile and cand.profile.bio %}
+                                    <p class="text-muted small mb-3 text-truncate">{{ cand.profile.bio }}</p>
+                                {% endif %}
+                                <div class="d-flex flex-wrap gap-1 mb-3">
+                                    {% if cand.profile and cand.profile.subject_tag %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-info small">{{ cand.profile.subject_tag }}</span>
+                                    {% endif %}
+                                    {% if cand.profile and cand.profile.exam_tag %}
+                                        <span class="badge bg-secondary bg-opacity-25 text-warning small">{{ cand.profile.exam_tag }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="pt-3 border-top border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                                <a href="{{ url_for('main.profile', user_id=cand.id) }}" class="btn btn-glass btn-sm">Profile</a>
+                                <form method="POST" action="{{ url_for('connections.send', user_id=cand.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-glow btn-sm"><i class="bi bi-person-plus me-1"></i>Connect</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="glass-card p-5 text-center">
+                            <i class="bi bi-stars display-4 text-muted mb-3 d-block"></i>
+                            <h4>No recommendations available right now</h4>
+                            <p class="text-muted">As more students join and add study preferences, recommendations will appear here!</p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

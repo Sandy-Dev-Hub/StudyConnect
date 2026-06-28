@@ -50,7 +50,7 @@ def _init_extensions(app):
     cache.init_app(app)
 
     with app.app_context():
-        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile  # noqa: F401
+        from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection  # noqa: F401
 
 
 
@@ -64,6 +64,7 @@ def _register_blueprints(app):
     from app.leaderboard import leaderboard_bp
     from app.api import api_bp
     from app.groups import groups_bp
+    from app.connections import connections_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -73,6 +74,7 @@ def _register_blueprints(app):
     app.register_blueprint(leaderboard_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(groups_bp)
+    app.register_blueprint(connections_bp)
 
 
 def _register_context_processors(app):
@@ -80,6 +82,7 @@ def _register_context_processors(app):
     @app.context_processor
     def inject_globals():
         from flask_login import current_user
+        from app.models.connection import Connection
         context = {
             'app_name': 'StudyConnect',
             'subject_tags': app.config.get('SUBJECT_TAGS', []),
@@ -88,6 +91,7 @@ def _register_context_processors(app):
         if current_user.is_authenticated:
             context['user_points'] = current_user.total_points
             context['user_streak'] = current_user.current_streak
+            context['pending_connections_count'] = Connection.query.filter_by(recipient_id=current_user.id, status='pending').count()
         return context
 
 

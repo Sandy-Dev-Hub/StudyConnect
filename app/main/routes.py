@@ -10,6 +10,7 @@ from app.points.services import get_user_points_history
 from app.extensions import db
 from app.main.forms import ProfileEditForm
 from app.main.services import get_or_create_profile, update_user_profile
+from app.connections.services import get_connection_status, get_connection
 
 
 @main_bp.route('/')
@@ -39,6 +40,12 @@ def profile(user_id):
     profile_data = get_or_create_profile(user)
     rank = get_user_rank(user.id)
 
+    connection_status = 'none'
+    connection = None
+    if current_user.is_authenticated:
+        connection_status = get_connection_status(current_user.id, user.id)
+        connection = get_connection(current_user.id, user.id)
+
     page = request.args.get('page', 1, type=int)
     tab = request.args.get('tab', 'questions', type=str)
 
@@ -59,6 +66,8 @@ def profile(user_id):
                            profile_user=user,
                            profile=profile_data,
                            rank=rank,
+                           connection_status=connection_status,
+                           connection=connection,
                            items=items,
                            groups=groups,
                            tab=tab,

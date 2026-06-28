@@ -55,11 +55,31 @@
                     </div>
 
                     <!-- Actions -->
-                    <div class="mb-2">
-                        {% if current_user.is_authenticated and current_user.id == profile_user.id %}
-                            <a href="{{ url_for('main.edit_profile') }}" class="btn btn-glow">
-                                <i class="bi bi-pencil-square me-1"></i>Edit Profile
-                            </a>
+                    <div class="mb-2 d-flex gap-2 flex-wrap">
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.id == profile_user.id %}
+                                <a href="{{ url_for('main.edit_profile') }}" class="btn btn-glow">
+                                    <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                                </a>
+                            {% elif connection_status == 'none' %}
+                                <form method="POST" action="{{ url_for('connections.send', user_id=profile_user.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-glow"><i class="bi bi-person-plus me-1"></i>Connect</button>
+                                </form>
+                            {% elif connection_status == 'pending_sent' %}
+                                <button type="button" class="btn btn-glass text-warning" disabled><i class="bi bi-clock me-1"></i>Request Sent</button>
+                            {% elif connection_status == 'pending_received' %}
+                                <form method="POST" action="{{ url_for('connections.accept', connection_id=connection.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-glow"><i class="bi bi-check-lg me-1"></i>Accept Request</button>
+                                </form>
+                            {% elif connection_status == 'accepted' %}
+                                <span class="btn btn-glass text-success pe-none"><i class="bi bi-person-check-fill me-1"></i>Connected</span>
+                                <form method="POST" action="{{ url_for('connections.remove', user_id=profile_user.id) }}" onsubmit="return confirm('Disconnect from {{ profile_user.username }}?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-outline-danger" title="Disconnect"><i class="bi bi-person-x"></i></button>
+                                </form>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
