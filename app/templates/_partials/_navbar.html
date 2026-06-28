@@ -43,6 +43,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('nearby.index') }}">
+                        <i class="bi bi-geo-alt-fill me-1 text-warning"></i> Nearby
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link position-relative" href="{{ url_for('connections.index') }}">
                         <i class="bi bi-person-lines-fill me-1"></i> Network
                         {% if current_user.is_authenticated and pending_connections_count and pending_connections_count > 0 %}
