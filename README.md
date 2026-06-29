@@ -357,14 +357,23 @@ App runs locally at `http://localhost:5000`
 
 ---
 
-## 🚀 Future Roadmap
+## 🚀 Phase 5 — Production Polish & Enterprise Features
 
-### Phase 5 — Production Polish
-- **Notifications**: Centralized notification bell for upvotes, group activity, and requests.
-- **Full-Text Search**: High-performance indexing for instantaneous query discovery.
-- **Mobile Optimization**: Refined touch targets and responsive navigation drawers.
-- **Performance Improvements**: CDN integration, asset bundling, and database query tuning.
-- **Production Deployment**: Docker containerization and cloud orchestration setup.
+### ✅ Phase 5A — PostgreSQL Full Text Search Engine
+- **Enterprise FTS:** Powered by PostgreSQL `TSVECTOR` and GIN indexing on `Question` and `StudyGroup` models.
+- **Relevancy Scoring & Excerpts:** Uses `ts_rank` for relevancy matching and `ts_headline` with `<mark>` tags for dynamic excerpt highlighting.
+- **Floating Autocomplete:** Live dropdown search results across questions and study groups.
+
+### ✅ Phase 5B — Real-Time Notification System
+- **Centralized Hub:** Dedicated Notification bell in navbar with animated red unread badge pill and glassmorphic dropdown.
+- **Real-Time Delivery:** Instantaneous Socket.IO broadcasting (`new_notification`) with floating Bootstrap toasts.
+- **Universal Event Hooks:** Automated notifications for Q&A answers, accepted answers, connection requests, group joins, nearby study matches, pomodoro completions, and study streak increases.
+- **Notification History Page:** Comprehensive filtering and management page at `/notifications`.
+
+### Phase 5 Remaining Roadmap
+- **Phase 5C — Performance Optimization**: Redis caching / memoization and N+1 query optimization via `joinedload()`.
+- **Phase 5D — Responsive UI & Accessibility**: Mobile/tablet layout refinement and ARIA accessibility standards.
+- **Phase 5E — Production Deployment & Security**: Dockerization, `/health` diagnostic endpoints, and cloud orchestration setup.
 
 ---
 
