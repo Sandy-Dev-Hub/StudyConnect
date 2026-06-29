@@ -45,6 +45,15 @@ def join_group(group, user):
     member = GroupMember(group_id=group.id, user_id=user.id, role='member')
     db.session.add(member)
     db.session.commit()
+    from app.notifications.services import create_notification
+    create_notification(
+        user_id=group.creator_id,
+        sender_id=user.id,
+        notification_type='group_req',
+        title="New Group Member",
+        message=f"{user.username} joined your study group '{group.name}'!",
+        link_url=f"/groups/{group.id}"
+    )
     return True, f"Successfully joined {group.name}!"
 
 def leave_group(group, user):

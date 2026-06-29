@@ -69,6 +69,7 @@ def _register_blueprints(app):
     from app.messages import messages_bp
     from app.nearby import nearby_bp
     from app.productivity import productivity_bp
+    from app.notifications import notifications_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -82,6 +83,7 @@ def _register_blueprints(app):
     app.register_blueprint(messages_bp)
     app.register_blueprint(nearby_bp)
     app.register_blueprint(productivity_bp)
+    app.register_blueprint(notifications_bp)
 
 
 def _register_context_processors(app):
@@ -91,6 +93,7 @@ def _register_context_processors(app):
         from flask_login import current_user
         from app.models.connection import Connection
         from app.messages.services import get_unread_message_count
+        from app.notifications.services import get_unread_notification_count
         context = {
             'app_name': 'StudyConnect',
             'subject_tags': app.config.get('SUBJECT_TAGS', []),
@@ -101,6 +104,7 @@ def _register_context_processors(app):
             context['user_streak'] = current_user.current_streak
             context['pending_connections_count'] = Connection.query.filter_by(recipient_id=current_user.id, status='pending').count()
             context['unread_messages_count'] = get_unread_message_count(current_user.id)
+            context['unread_notifications_count'] = get_unread_notification_count(current_user.id)
         return context
 
 

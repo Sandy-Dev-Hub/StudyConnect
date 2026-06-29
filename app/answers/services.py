@@ -21,6 +21,16 @@ def post_answer(body, question_id, author_id):
         question.answer_count = (question.answer_count or 0) + 1
 
     db.session.commit()
+    from app.notifications.services import create_notification
+    if question and question.author_id != author_id:
+        create_notification(
+            user_id=question.author_id,
+            sender_id=author_id,
+            notification_type='answer',
+            title="New Answer",
+            message=f"Someone posted an answer to your question: '{question.title[:40]}...'!",
+            link_url=f"/questions/{question.id}"
+        )
     return answer
 
 
@@ -198,6 +208,15 @@ def accept_answer(answer_id, user_id):
         answer.author.add_points(25)
         _log_points(answer.author_id, 25, PointsLog.REASON_ANSWER_ACCEPTED, answer_id)
         points_awarded = 25
+        from app.notifications.services import create_notification
+        create_notification(
+            user_id=answer.author_id,
+            sender_id=user_id,
+            notification_type='accept',
+            title="Answer Accepted",
+            message=f"Your answer on '{question.title[:40]}...' was accepted (+25 points)!",
+            link_url=f"/questions/{question.id}"
+        )
 
     db.session.commit()
     return answer, points_awarded, None

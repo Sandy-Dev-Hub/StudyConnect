@@ -2689,5 +2689,26 @@ select.glass-input[data-customized="true"] {
   }
 }
 
+/* ===================================================
+   PHASE 5B: NOTIFICATIONS STYLING
+   =================================================== */
+.notif-unread-bg {
+  background-color: rgba(234, 133, 40, 0.08) !important;
+}
+
+.notif-dropdown-menu {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--glass-border);
+}
+
+.notif-dropdown-menu .dropdown-item {
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-normal);
+}
+
+.notif-dropdown-menu .dropdown-item:hover {
+  background-color: var(--glass-hover);
+}
+
 
 

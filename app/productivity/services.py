@@ -49,7 +49,28 @@ class ProductivityService:
             # Update active uncompleted study goals
             active_goals = StudyGoal.query.filter_by(user_id=user.id, completed=False).all()
             for goal in active_goals:
+                was_completed = goal.completed
                 goal.add_progress(duration_minutes)
+                if not was_completed and goal.completed:
+                    from app.notifications.services import create_notification
+                    create_notification(
+                        user_id=user.id,
+                        sender_id=None,
+                        notification_type='goal',
+                        title="Goal Completed!",
+                        message=f"Congratulations! You completed your study goal: '{goal.title}'!",
+                        link_url="/productivity/"
+                    )
+
+            from app.notifications.services import create_notification
+            create_notification(
+                user_id=user.id,
+                sender_id=None,
+                notification_type='pomodoro',
+                title="Focus Session Completed",
+                message=f"Great job finishing a {duration_minutes}-minute focus session! (+2 pts)",
+                link_url="/productivity/"
+            )
 
             # Invalidate memoized analytics cache
             AnalyticsService.invalidate_cache(user.id)

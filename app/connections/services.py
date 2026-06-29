@@ -46,6 +46,17 @@ def send_request(requester_id, recipient_id):
         db.session.add(conn)
     
     db.session.commit()
+    from app.notifications.services import create_notification
+    requester = db.session.get(User, requester_id)
+    req_name = requester.username if requester else "Someone"
+    create_notification(
+        user_id=recipient_id,
+        sender_id=requester_id,
+        notification_type='connection_req',
+        title="Connection Request",
+        message=f"{req_name} sent you a connection request!",
+        link_url="/connections/"
+    )
     return conn, "Connection request sent successfully!"
 
 def accept_request(connection_id, user_id):
@@ -53,6 +64,17 @@ def accept_request(connection_id, user_id):
     if conn and conn.recipient_id == user_id and conn.status == 'pending':
         conn.status = 'accepted'
         db.session.commit()
+        from app.notifications.services import create_notification
+        recipient = db.session.get(User, user_id)
+        rec_name = recipient.username if recipient else "Someone"
+        create_notification(
+            user_id=conn.requester_id,
+            sender_id=user_id,
+            notification_type='connection_acc',
+            title="Connection Accepted",
+            message=f"{rec_name} accepted your connection request!",
+            link_url=f"/profile/{user_id}"
+        )
         return True
     return False
 

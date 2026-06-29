@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCustomDropdowns();
     initCommunityDropdown();
     initCommunityBadgeSync();
+    initNotifications();
 });
 
 /* =================================================
@@ -860,3 +861,217 @@ function buildTriggerHTML(text, icon, isPlaceholder) {
     `;
 }
 
+
+
+/* ===================================================
+   PHASE 5B: REAL-TIME NOTIFICATIONS
+   =================================================== */
+function initNotifications() {
+    const notifDropdown = document.getElementById('notificationsDropdown');
+    if (notifDropdown) {
+        notifDropdown.addEventListener('show.bs.dropdown', () => {
+            loadNavbarNotifications();
+        });
+    }
+
+    const markAllBtn = document.getElementById('mark-all-notif-read');
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            markAllNotificationsRead();
+        });
+    }
+
+    const pageMarkAll = document.getElementById('page-mark-all-read');
+    if (pageMarkAll) {
+        pageMarkAll.addEventListener('click', () => {
+            markAllNotificationsRead(true);
+        });
+    }
+
+    // Delegate clicks for individual mark read / delete on page or navbar
+    document.addEventListener('click', (e) => {
+        const readBtn = e.target.closest('.mark-read-btn');
+        if (readBtn) {
+            e.stopPropagation();
+            const id = readBtn.getAttribute('data-id');
+            markNotificationRead(id);
+        }
+
+        const deleteBtn = e.target.closest('.delete-notif-btn');
+        if (deleteBtn) {
+            e.stopPropagation();
+            const id = deleteBtn.getAttribute('data-id');
+            deleteNotification(id);
+        }
+    });
+
+    // Socket.IO real-time listener
+    if (typeof io !== 'undefined') {
+        const socket = io();
+        socket.on('new_notification', (notif) => {
+            updateUnreadBadge(1, true);
+            showNotificationToast(notif);
+            if (notifDropdown && notifDropdown.classList.contains('show')) {
+                loadNavbarNotifications();
+            }
+        });
+    }
+}
+
+function updateUnreadBadge(delta, isRelative = false) {
+    const badge = document.getElementById('navbar-notif-badge');
+    if (!badge) return;
+    let current = parseInt(badge.textContent || '0', 10);
+    let count = isRelative ? current + delta : delta;
+    if (count < 0) count = 0;
+    badge.textContent = count;
+    if (count > 0) {
+        badge.classList.remove('d-none');
+    } else {
+        badge.classList.add('d-none');
+    }
+}
+
+function loadNavbarNotifications() {
+    const listEl = document.getElementById('navbar-notif-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<li class="text-center p-3 text-muted small">Loading notifications...</li>';
+
+    fetch('/notifications/api/list?limit=10')
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateUnreadBadge(data.unread_count);
+                if (!data.notifications.length) {
+                    listEl.innerHTML = '<li class="text-center p-3 text-muted small">No notifications</li>';
+                    return;
+                }
+                listEl.innerHTML = data.notifications.map(n => {
+                    const iconEmoji = getNotifIcon(n.notification_type);
+                    const bgClass = n.is_read ? '' : 'bg-secondary bg-opacity-25';
+                    return `
+                        <li class="dropdown-item p-2 border-bottom border-secondary d-flex align-items-start gap-2 ${bgClass}" style="white-space: normal;">
+                            <span class="fs-5 flex-shrink-0">${iconEmoji}</span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong class="small text-truncate d-block" style="max-width: 180px;">${escapeHtml(n.title)}</strong>
+                                    <span class="text-muted" style="font-size: 0.65rem;">${n.time_ago || ''}</span>
+                                </div>
+                                <div class="small text-muted text-truncate" style="max-width: 210px;">${escapeHtml(n.message)}</div>
+                                ${n.link_url ? `<a href="${n.link_url}" class="small text-accent text-decoration-none">View <i class="bi bi-arrow-right"></i></a>` : ''}
+                            </div>
+                            ${!n.is_read ? `<button class="btn btn-sm btn-link text-muted p-0 mark-read-btn flex-shrink-0" data-id="${n.id}" title="Mark read"><i class="bi bi-circle-fill text-accent" style="font-size: 6px;"></i></button>` : ''}
+                        </li>
+                    `;
+                }).join('');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            listEl.innerHTML = '<li class="text-center p-3 text-danger small">Failed to load</li>';
+        });
+}
+
+function getNotifIcon(type) {
+    switch(type) {
+        case 'answer': return '💬';
+        case 'accept': return '✅';
+        case 'connection_req':
+        case 'connection_acc': return '🤝';
+        case 'group_req': return '👥';
+        case 'nearby_req':
+        case 'nearby_acc': return '📍';
+        case 'pomodoro':
+        case 'goal':
+        case 'streak': return '🔥';
+        default: return '🔔';
+    }
+}
+
+function markNotificationRead(id) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    fetch(`/notifications/${id}/read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateUnreadBadge(data.unread_count);
+            const el = document.querySelector(`[data-notif-id="${id}"]`);
+            if (el) el.classList.remove('notif-unread-bg');
+            loadNavbarNotifications();
+        }
+    });
+}
+
+function markAllNotificationsRead(reloadPage = false) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    fetch('/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateUnreadBadge(0);
+            if (reloadPage) {
+                window.location.reload();
+            } else {
+                loadNavbarNotifications();
+            }
+        }
+    });
+}
+
+function deleteNotification(id) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    fetch(`/notifications/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateUnreadBadge(data.unread_count);
+            const el = document.querySelector(`[data-notif-id="${id}"]`);
+            if (el) el.remove();
+            loadNavbarNotifications();
+        }
+    });
+}
+
+function showNotificationToast(notif) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toastId = 'toast-' + Date.now();
+    const iconEmoji = getNotifIcon(notif.notification_type);
+    const html = `
+        <div id="${toastId}" class="toast glass-card border border-accent text-white show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-transparent text-white border-bottom border-secondary d-flex justify-content-between">
+                <strong class="me-auto d-flex align-items-center"><span class="me-2 fs-5">${iconEmoji}</span> ${escapeHtml(notif.title)}</strong>
+                <small class="text-muted">Just now</small>
+                <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                <p class="small mb-2">${escapeHtml(notif.message)}</p>
+                ${notif.link_url ? `<a href="${notif.link_url}" class="btn btn-sm btn-accent py-0 px-2">View Details</a>` : ''}
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+    setTimeout(() => {
+        const el = document.getElementById(toastId);
+        if (el) el.remove();
+    }, 6000);
+}

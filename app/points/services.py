@@ -41,9 +41,20 @@ def record_activity(user, activity_type):
         )
         db.session.add(streak_entry)
 
-    # Update the user's streak counters
+    old_streak = user.current_streak
     user.update_streak()
     db.session.commit()
+
+    if user.current_streak > old_streak and user.current_streak > 1:
+        from app.notifications.services import create_notification
+        create_notification(
+            user_id=user.id,
+            sender_id=None,
+            notification_type='streak',
+            title="Streak Increased! 🔥",
+            message=f"Awesome! You are now on a {user.current_streak}-day study streak!",
+            link_url="/leaderboard/"
+        )
 
 
 def get_user_points_history(user_id, limit=20):

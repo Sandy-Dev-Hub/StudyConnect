@@ -197,6 +197,15 @@ class StudyRequestService:
             'expires_at': req.expires_at.isoformat()
         }
         socketio.emit('study_request_received', payload, room=f'user_{recipient_id}')
+        from app.notifications.services import create_notification
+        create_notification(
+            user_id=recipient_id,
+            sender_id=requester.id,
+            notification_type='nearby_req',
+            title="Nearby Study Request",
+            message=f"{requester.username} invited you to study nearby!",
+            link_url="/nearby/"
+        )
         return req
 
     @staticmethod
@@ -227,6 +236,16 @@ class StudyRequestService:
                 'conversation_id': conversation.id,
                 'recipient_username': req.recipient.username
             }, room=f'user_{req.requester_id}')
+
+            from app.notifications.services import create_notification
+            create_notification(
+                user_id=req.requester_id,
+                sender_id=req.recipient_id,
+                notification_type='nearby_acc',
+                title="Study Request Accepted",
+                message=f"{req.recipient.username} accepted your study invitation! Click to start chatting.",
+                link_url=f"/messages/?conversation_id={conversation.id}"
+            )
 
             return {'status': 'accepted', 'conversation_id': conversation.id}
 

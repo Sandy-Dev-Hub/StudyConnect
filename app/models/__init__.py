@@ -12,5 +12,6 @@ from app.models.study_request import StudyRequest
 from app.models.study_session import StudySession
 from app.models.pomodoro_room import PomodoroRoom
 from app.models.study_goal import StudyGoal
+from app.models.notification import Notification
 
-__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message', 'StudyRequest', 'StudySession', 'PomodoroRoom', 'StudyGoal']
+__all__ = ['User', 'Question', 'Answer', 'Vote', 'PointsLog', 'StudyStreak', 'StudyGroup', 'GroupMember', 'UserProfile', 'Connection', 'Conversation', 'Message', 'StudyRequest', 'StudySession', 'PomodoroRoom', 'StudyGoal', 'Notification']

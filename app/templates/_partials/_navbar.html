@@ -129,13 +129,28 @@
             <!-- Right Section: Auth & User Actions -->
             <div class="navbar-right d-flex align-items-center flex-shrink-0 ms-auto my-2 my-lg-0 gap-2">
                 {% if current_user.is_authenticated %}
-                    <div class="nav-item dropdown">
-                        <a class="nav-link text-muted p-2" href="javascript:void(0)" role="button"
-                           title="No new notifications" aria-label="Notifications">
+                    <div class="nav-item dropdown notifications-dropdown">
+                        <a class="nav-link text-muted p-2 dropdown-toggle d-flex align-items-center" href="#" id="notificationsDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false" title="Notifications" aria-label="Notifications">
                             <i class="bi bi-bell position-relative fs-6">
-                                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
+                                <span id="navbar-notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark {% if not unread_notifications_count or unread_notifications_count == 0 %}d-none{% endif %}" style="font-size: 0.65rem;">
+                                    {{ unread_notifications_count or 0 }}
+                                </span>
                             </i>
                         </a>
+                        <ul class="dropdown-menu dropdown-menu-end glass-dropdown notif-dropdown-menu p-2" aria-labelledby="notificationsDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                            <li class="d-flex align-items-center justify-content-between px-2 py-1 border-bottom border-secondary mb-1">
+                                <span class="fw-bold fs-6">Notifications</span>
+                                <a href="javascript:void(0)" id="mark-all-notif-read" class="small text-accent text-decoration-none">Mark all read</a>
+                            </li>
+                            <div id="navbar-notif-list">
+                                <li class="text-center p-3 text-muted small">Loading notifications...</li>
+                            </div>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li class="text-center">
+                                <a class="dropdown-item small text-accent py-1" href="{{ url_for('notifications.index') }}">View All Notifications</a>
+                            </li>
+                        </ul>
                     </div>
 
                     <!-- Ask Question Button -->
