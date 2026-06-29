@@ -295,11 +295,22 @@ Edit `.env`. Key variables:
 
 | Variable | Description |
 |---|---|
-| `SECRET_KEY` | Flask signing key (required) |
-| `DATABASE_URL` | Leave empty for SQLite dev, or set PostgreSQL URL |
-| `REDIS_URL` | Leave empty for in-memory cache / memory spatial fallback |
+| `SECRET_KEY` | Flask signing key (required for secure sessions) |
+| `DATABASE_URL` | Leave empty for SQLite dev, or provide a Neon / PostgreSQL connection string (`postgresql+psycopg://...`) |
+| `REDIS_URL` | Provide a Redis instance URL (`redis://...`) for spatial queries and room sync, or leave empty for in-memory fallback |
 | `MAIL_*` | SMTP credentials for email verification |
-| `MAIL_SUPPRESS_SEND` | Set 1 to print verification emails directly to console |
+| `MAIL_SUPPRESS_SEND` | Set `1` to print verification emails directly to console |
+
+#### ☁️ Neon PostgreSQL Setup
+To connect StudyConnect to a serverless **Neon PostgreSQL** production database:
+1. Create a project on [Neon](https://neon.tech) and copy your connection string.
+2. In your `.env` file, set `DATABASE_URL=postgresql+psycopg://user:pass@ep-xyz.region.aws.neon.tech/dbname?sslmode=require`.
+3. Run `flask db upgrade` to automatically execute all Alembic schema migrations against Neon.
+
+#### 🔴 Redis Setup
+To enable high-performance spatial indexing (GeoAlchemy/Redis GEO) and real-time synchronized Pomodoro timer persistence:
+1. Install and start a local Redis server or provision a cloud instance (e.g., Redis Cloud / Upstash).
+2. In your `.env` file, set `REDIS_URL=redis://localhost:6379/0` (or your cloud broker URI).
 
 ### 3. Initialize database and run
 
@@ -313,7 +324,7 @@ App runs locally at `http://localhost:5000`
 ## Production
 
 1. Set `FLASK_ENV=production` and a strong, cryptographic `SECRET_KEY`
-2. Configure a PostgreSQL `DATABASE_URL` instance
+2. Configure a serverless Neon PostgreSQL `DATABASE_URL` instance
 3. Set real SMTP server credentials and `MAIL_SUPPRESS_SEND=0`
 4. Configure `REDIS_URL` for production WebSocket Pub/Sub and GEO indexing
 5. Run using Eventlet worker class: `gunicorn -k eventlet -w 1 -b 0.0.0.0:8000 run:app`
