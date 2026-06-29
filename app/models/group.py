@@ -1,8 +1,11 @@
+import os
 from datetime import datetime, timezone
-from sqlalchemy.orm import deferred
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.schema import FetchedValue
 from app.extensions import db
+
+_db_url = os.environ.get('DATABASE_URL', '').strip()
+_is_postgres = _db_url.startswith(('postgres://', 'postgresql://', 'postgresql+'))
 
 class StudyGroup(db.Model):
     __tablename__ = 'study_groups'
@@ -16,7 +19,8 @@ class StudyGroup(db.Model):
     avatar_color = db.Column(db.String(7), default='#EA8528', nullable=False)
     avatar_filename = db.Column(db.String(255), nullable=True)
     banner_filename = db.Column(db.String(255), nullable=True)
-    search_vector = deferred(db.Column(TSVECTOR().with_variant(db.Text, 'sqlite'), server_default=FetchedValue(), server_onupdate=FetchedValue(), nullable=True))
+    if _is_postgres:
+        search_vector = db.Column(TSVECTOR(), server_default=FetchedValue(), server_onupdate=FetchedValue(), nullable=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
