@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from sqlalchemy.orm import deferred
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.schema import FetchedValue
 
@@ -17,7 +18,7 @@ class Question(db.Model):
     view_count = db.Column(db.Integer, default=0, nullable=False)
     answer_count = db.Column(db.Integer, default=0, nullable=False)
     is_resolved = db.Column(db.Boolean, default=False, nullable=False)
-    search_vector = db.Column(TSVECTOR().with_variant(db.Text, 'sqlite'), server_default=FetchedValue(), server_onupdate=FetchedValue(), nullable=True)
+    search_vector = deferred(db.Column(TSVECTOR().with_variant(db.Text, 'sqlite'), server_default=FetchedValue(), server_onupdate=FetchedValue(), nullable=True))
     author_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     study_group_id = db.Column(db.Integer, db.ForeignKey('study_groups.id', ondelete='SET NULL'), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
