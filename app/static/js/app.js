@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initAutoCloseAlerts();
     initNavbarScrollEffect();
     initCustomDropdowns();
+    initCommunityDropdown();
+    initCommunityBadgeSync();
 });
 
 /* =================================================
@@ -192,6 +194,25 @@ function initLiveSearch() {
     if (!input || !dropdown) return;
 
     let debounceTimer;
+    let selectedIndex = -1;
+
+    function updateSelection() {
+        const items = dropdown.querySelectorAll('.search-result-item[href]');
+        items.forEach((item, index) => {
+            if (index === selectedIndex) {
+                item.classList.add('focused');
+                item.setAttribute('aria-selected', 'true');
+                input.setAttribute('aria-activedescendant', `search-item-${index}`);
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                item.classList.remove('focused');
+                item.setAttribute('aria-selected', 'false');
+            }
+        });
+        if (selectedIndex === -1) {
+            input.removeAttribute('aria-activedescendant');
+        }
+    }
 
     input.addEventListener('input', () => {
         clearTimeout(debounceTimer);
@@ -200,6 +221,8 @@ function initLiveSearch() {
         if (query.length < 2) {
             dropdown.classList.add('d-none');
             dropdown.innerHTML = '';
+            input.setAttribute('aria-expanded', 'false');
+            selectedIndex = -1;
             return;
         }
 
@@ -209,25 +232,44 @@ function initLiveSearch() {
                 const data = await response.json();
 
                 if (data.results.length === 0) {
-                    dropdown.innerHTML = '<div class="search-result-item text-muted">No results found</div>';
+                    dropdown.innerHTML = `
+                        <div class="search-empty-state" role="status">
+                            <i class="bi bi-search"></i>
+                            <span>No matching questions found</span>
+                        </div>
+                    `;
                     dropdown.classList.remove('d-none');
+                    input.setAttribute('aria-expanded', 'true');
+                    selectedIndex = -1;
                     return;
                 }
 
-                dropdown.innerHTML = data.results.map(q => `
-                    <a href="/questions/${q.id}" class="search-result-item">
+                dropdown.innerHTML = data.results.map((q, idx) => `
+                    <a href="/questions/${q.id}" id="search-item-${idx}" class="search-result-item" role="option" aria-selected="false">
                         <div class="search-result-title">${escapeHtml(q.title)}</div>
                         <div class="search-result-meta">
-                            <span class="tag tag-subject" style="font-size:0.65rem;padding:0.1rem 0.4rem">${escapeHtml(q.subject_tag)}</span>
+                            <span class="tag tag-subject">${escapeHtml(q.subject_tag)}</span>
                             <span class="ms-2">${q.answer_count} answer${q.answer_count !== 1 ? 's' : ''}</span>
                             <span class="ms-2">${q.time_ago}</span>
-                            ${q.is_resolved ? '<span class="ms-2 text-success"><i class="bi bi-check-circle-fill"></i></span>' : ''}
+                            ${q.is_resolved ? '<span class="ms-2 text-success" title="Resolved"><i class="bi bi-check-circle-fill"></i></span>' : ''}
                         </div>
                     </a>
                 `).join('');
                 dropdown.classList.remove('d-none');
+                input.setAttribute('aria-expanded', 'true');
+                selectedIndex = -1;
+
+                const items = dropdown.querySelectorAll('.search-result-item[href]');
+                items.forEach((item, index) => {
+                    item.addEventListener('mouseenter', () => {
+                        selectedIndex = index;
+                        updateSelection();
+                    });
+                });
             } catch (err) {
                 dropdown.classList.add('d-none');
+                input.setAttribute('aria-expanded', 'false');
+                selectedIndex = -1;
             }
         }, 300);
     });
@@ -236,17 +278,39 @@ function initLiveSearch() {
     document.addEventListener('click', (e) => {
         if (!input.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('d-none');
+            input.setAttribute('aria-expanded', 'false');
+            selectedIndex = -1;
         }
     });
 
-    // Handle enter key
+    // Handle keyboard navigation
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        const items = dropdown.querySelectorAll('.search-result-item[href]');
+
+        if (e.key === 'ArrowDown') {
+            if (dropdown.classList.contains('d-none') || items.length === 0) return;
             e.preventDefault();
-            const query = input.value.trim();
-            if (query.length >= 2) {
-                window.location.href = `/questions/?q=${encodeURIComponent(query)}`;
+            selectedIndex = (selectedIndex + 1) % items.length;
+            updateSelection();
+        } else if (e.key === 'ArrowUp') {
+            if (dropdown.classList.contains('d-none') || items.length === 0) return;
+            e.preventDefault();
+            selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+            updateSelection();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && selectedIndex < items.length) {
+                items[selectedIndex].click();
+            } else {
+                const query = input.value.trim();
+                if (query.length >= 2) {
+                    window.location.href = `/questions/?q=${encodeURIComponent(query)}`;
+                }
             }
+        } else if (e.key === 'Escape') {
+            dropdown.classList.add('d-none');
+            input.setAttribute('aria-expanded', 'false');
+            selectedIndex = -1;
         }
     });
 }
@@ -455,6 +519,51 @@ function initNavbarScrollEffect() {
             nav.style.background = 'rgba(10, 10, 26, 0.8)';
         }
     });
+}
+
+/* =================================================
+   COMMUNITY DROPDOWN & BADGE SYNC
+   ================================================= */
+function initCommunityDropdown() {
+    const dropdown = document.querySelector('.community-dropdown');
+    if (!dropdown) return;
+    const toggleBtn = dropdown.querySelector('.dropdown-toggle');
+    const menu = dropdown.querySelector('.dropdown-menu');
+    if (!toggleBtn || !menu) return;
+
+    let hoverTimeout;
+
+    dropdown.addEventListener('mouseenter', () => {
+        if (window.innerWidth >= 992) {
+            clearTimeout(hoverTimeout);
+            menu.classList.add('show');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+        }
+    });
+
+    dropdown.addEventListener('mouseleave', () => {
+        if (window.innerWidth >= 992) {
+            hoverTimeout = setTimeout(() => {
+                menu.classList.remove('show');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+            }, 150);
+        }
+    });
+}
+
+function initCommunityBadgeSync() {
+    const unreadBadge = document.getElementById('navbar-unread-badge');
+    const indicator = document.getElementById('community-nav-indicator');
+    if (!unreadBadge || !indicator) return;
+
+    const observer = new MutationObserver(() => {
+        const count = parseInt(unreadBadge.textContent) || 0;
+        const isHidden = unreadBadge.classList.contains('d-none') || count === 0;
+        if (!isHidden) {
+            indicator.classList.remove('d-none');
+        }
+    });
+    observer.observe(unreadBadge, { attributes: true, characterData: true, subtree: true });
 }
 
 /* =================================================

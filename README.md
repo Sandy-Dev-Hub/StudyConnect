@@ -123,6 +123,78 @@ Phase 3 transforms StudyConnect into a location-aware study companion, allowing 
 
 ---
 
+## ⏱ Phase 4 — Productivity & Study Analytics
+
+Phase 4 introduces powerful productivity tools, study tracking, and personal analytics designed to keep students focused and motivated. **All existing Phase 1, Phase 2, and Phase 3 functionality remains fully integrated and operational.**
+
+### ⏱ Personal Pomodoro
+- Focus timer with start, pause, resume, and reset controls
+- Custom durations tailored to individual study habits
+- HTML5 Browser notifications on session completion
+- Auto-save sessions and persistent state tracking across browser refreshes
+- Session persistence backed by user activity logs
+- **+2 points** awarded automatically on completed focus sessions
+- Automatic daily study streak updates upon session completion
+
+### 👥 Group Pomodoro
+- Shared study rooms for synchronized peer focus
+- Real-time synchronized timers across all connected participants
+- **Socket.IO synchronization** ensuring instantaneous state broadcast
+- **Redis-backed timer persistence** preventing state drift
+- Granular Moderator/Admin controls to start, pause, and reset group timers
+- Live synchronized countdown visible to all members in the room
+
+### 🎯 Study Goals
+- Daily goals tracking study targets
+- Weekly goals tracking cumulative progress
+- Intuitive goal creation and management
+- Automated goal completion tracking
+- Animated progress bars reflecting real-time percentage completion
+
+### 📊 Productivity Dashboard
+- Comprehensive weekly study hours tracking
+- Visual subject breakdown showing time spent per topic
+- Dynamic goal completion rate calculation
+- GitHub-style 365-day dark/amber contribution heatmap
+- Interactive **Chart.js** analytics and distribution charts
+- Granular study session history logs
+
+---
+
+## 📸 Screenshots & Placeholders
+
+### Productivity Dashboard
+```
+[ Screenshot Placeholder: Productivity Dashboard Overview ]
+```
+
+### Pomodoro Timer
+```
+[ Screenshot Placeholder: Personal Focus Pomodoro Timer ]
+```
+
+### Group Focus Room
+```
+[ Screenshot Placeholder: Synchronized Group Focus Room ]
+```
+
+### Study Goals
+```
+[ Screenshot Placeholder: Daily & Weekly Study Goals ]
+```
+
+### Analytics Dashboard
+```
+[ Screenshot Placeholder: Chart.js Analytics & Subject Breakdown ]
+```
+
+### Heatmap
+```
+[ Screenshot Placeholder: GitHub-Style Contribution Heatmap ]
+```
+
+---
+
 ## 📊 Current Project Progress
 
 | Phase | Status | Milestone Description |
@@ -130,8 +202,8 @@ Phase 3 transforms StudyConnect into a location-aware study companion, allowing 
 | **Phase 1** | ✅ Completed | Foundation, Authentication, Q&A, Voting, Points & Leaderboard |
 | **Phase 2** | ✅ Completed | Community, Student Profiles, Study Groups, Connections & Real-Time DM |
 | **Phase 3** | ✅ Completed | Nearby Study Discovery, Interactive Map, Storage Abstraction & Requests |
-| **Phase 4** | ⏳ Pending | Productivity (Pomodoro Timer, Group Sessions & Study Goals) |
-| **Phase 5** | ⏳ Pending | Production Polish, Performance Tuning & Deployment |
+| **Phase 4** | ✅ Completed | Productivity (Pomodoro Timer, Group Sessions & Study Goals) |
+| **Phase 5** | 🚧 Planned | Production Polish, Performance Tuning & Deployment |
 
 ---
 
@@ -145,17 +217,23 @@ Phase 3 transforms StudyConnect into a location-aware study companion, allowing 
 - **Redis**: High-speed in-memory data store & Pub/Sub broker
 - **GeoAlchemy2**: Spatial database extension schemas
 - **Alembic / Flask-Migrate**: Database schema migration management
+- **Productivity Blueprint**: Dedicated modular structure for focus sessions and goals
+- **Analytics Service**: High-performance aggregation engine with Redis caching
 
 ### Frontend
 - **Bootstrap 5**: Responsive layout grid and UI component framework
 - **Jinja2**: Server-side HTML templating engine
 - **Leaflet.js**: Mobile-friendly interactive mapping library
+- **Chart.js**: Interactive data visualization and study graphs
+- **Pomodoro Engine**: Client-side background timer with HTML5 notifications
+- **Heatmap Components**: GitHub-style activity contribution matrix
 - **JavaScript (ES6+)**: Dynamic client-side interactivity and AJAX workflows
 - **HTML5 & CSS3**: Custom dark glassmorphism design system (`#111110` & `#EA8528`)
 
 ### Infrastructure
 - **Redis GEO**: In-memory spatial indexing and radius calculation engine
-- **Socket.IO**: Real-time event transport protocol
+- **Redis Timer Persistence**: Reliable shared room state and countdown storage
+- **Socket.IO Synchronization**: Low-latency WebSocket event broadcasting
 - **Gunicorn**: WSGI HTTP server for production deployment
 - **Eventlet**: Concurrent networking library for WebSocket support
 
@@ -182,14 +260,15 @@ Phase 3 transforms StudyConnect into a location-aware study companion, allowing 
 - ✅ Configurable Radius Search ($1\text{km} - 10\text{km}$) with Subject/Exam Filters
 - ✅ Instant Study Requests with 30s Cooldown & Anti-Spam Protection
 - ✅ Real-Time Socket.IO Invitation Notifications & Drawer Modal
+
 ### Productivity & Study Analytics (Phase 4)
-- ✅ Personal Pomodoro Timer Engine with HTML5 Desktop Notifications & Custom Durations
-- ✅ Synchronized Group Focus Rooms via Socket.IO with Role-Based Moderator Controls
-- ✅ Automatic +2 Points Awarded per Completed Focus Session & Streak Integration
-- ✅ Daily & Weekly Study Goal Tracking with Auto-Calculated Progress Bars
-- ✅ High-Performance Aggregated Analytics Dashboard with 5-Minute Redis Caching
-- ✅ Chart.js Interactive Graphs for Weekly Hours & Subject Distribution
-- ✅ GitHub-Style 365-Day Dark/Amber Contribution Calendar Heatmap
+- ✅ Personal Pomodoro
+- ✅ Group Pomodoro
+- ✅ Daily & Weekly Goals
+- ✅ Productivity Dashboard
+- ✅ Analytics
+- ✅ Heatmap
+- ✅ Study Session Tracking
 
 ### Future Polish (Phase 5)
 - 🚧 Global Real-Time Push Notifications (Coming Soon)

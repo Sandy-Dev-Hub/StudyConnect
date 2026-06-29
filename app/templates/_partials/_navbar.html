@@ -1,7 +1,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark glass-nav">
-    <div class="container">
-        <!-- Brand -->
-        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.home') }}">
+    <div class="container-fluid d-flex align-items-center justify-content-between p-0">
+        <!-- Brand (Left) -->
+        <a class="navbar-brand d-flex align-items-center me-auto me-lg-3 flex-shrink-0" href="{{ url_for('main.home') }}">
             <span class="brand-icon me-2">
                 <i class="bi bi-lightning-charge-fill"></i>
             </span>
@@ -9,117 +9,160 @@
         </a>
 
         <!-- Mobile Toggle -->
-        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler border-0 flex-shrink-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Nav Links -->
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <!-- Search Bar -->
-            <div class="nav-search-wrapper mx-auto position-relative">
-                <div class="nav-search-box">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="text" id="nav-search-input" class="nav-search-input"
-                           placeholder="Search questions..." autocomplete="off">
+        <!-- Nav Links & Layout (Center & Right) -->
+        <div class="collapse navbar-collapse d-lg-flex align-items-center justify-content-between flex-grow-1 min-w-0 ms-lg-3" id="navbarNav">
+            <!-- Center Section: Search & Navigation -->
+            <div class="navbar-center d-flex align-items-center flex-grow-1 min-w-0 my-3 my-lg-0">
+                <!-- Search Bar -->
+                <div class="nav-search-wrapper position-relative flex-shrink-1" role="search">
+                    <div class="nav-search-box">
+                        <i class="bi bi-search search-icon" aria-hidden="true"></i>
+                        <input type="text" id="nav-search-input" class="nav-search-input"
+                               placeholder="Search questions..." autocomplete="off"
+                               role="combobox" aria-expanded="false" aria-controls="search-results-dropdown" aria-haspopup="listbox">
+                    </div>
+                    <div id="search-results-dropdown" class="search-results-dropdown d-none" role="listbox"></div>
                 </div>
-                <div id="search-results-dropdown" class="search-results-dropdown d-none"></div>
-            </div>
 
-            <!-- Right Side -->
-            <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('main.home') }}">
-                        <i class="bi bi-house me-1"></i> Home
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('questions.feed') }}">
-                        <i class="bi bi-chat-square-text me-1"></i> Questions
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('groups.index') }}">
-                        <i class="bi bi-people me-1"></i> Groups
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link position-relative" href="{{ url_for('nearby.index') }}">
-                        <i class="bi bi-geo-alt-fill me-1 text-warning"></i> Nearby
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('productivity.index') }}">
-                        <i class="bi bi-clock-history me-1 text-warning"></i> Focus
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link position-relative" href="{{ url_for('connections.index') }}">
-                        <i class="bi bi-person-lines-fill me-1"></i> Network
-                        {% if current_user.is_authenticated and pending_connections_count and pending_connections_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
-                                {{ pending_connections_count }}
-                            </span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link position-relative" href="{{ url_for('messages.index') }}">
-                        <i class="bi bi-chat-dots-fill me-1"></i> Messages
-                        {% if current_user.is_authenticated and unread_messages_count and unread_messages_count > 0 %}
-                            <span id="navbar-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.65rem;">
-                                {{ unread_messages_count }}
-                            </span>
-                        {% else %}
-                            <span id="navbar-unread-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark d-none" style="font-size: 0.65rem;">0</span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('leaderboard.index') }}">
-                        <i class="bi bi-trophy me-1"></i> Leaderboard
-                    </a>
-                </li>
-                {% if current_user.is_authenticated %}
-                <li class="nav-item dropdown me-2">
-                    <a class="nav-link text-muted" href="javascript:void(0)" role="button"
-                       title="No new notifications" aria-label="Notifications">
-                        <i class="bi bi-bell position-relative">
-                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
-                        </i>
-                    </a>
-                </li>
-
-                    <!-- Ask Question Button -->
-                    <li class="nav-item ms-2">
-                        <a class="btn btn-glow btn-sm" href="{{ url_for('questions.ask') }}">
-                            <i class="bi bi-plus-circle me-1"></i> Ask
+                <!-- Navigation Links -->
+                <ul class="navbar-nav d-flex align-items-center flex-row flex-nowrap mb-0 gap-1">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'main.home' %}active{% endif %}" href="{{ url_for('main.home') }}">
+                            <i class="bi bi-house me-1"></i> Home
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('questions.') %}active{% endif %}" href="{{ url_for('questions.feed') }}">
+                            <i class="bi bi-chat-square-text me-1"></i> Questions
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown community-dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center {% if request.endpoint and (request.endpoint.startswith('groups.') or request.endpoint.startswith('connections.') or request.endpoint.startswith('messages.') or request.endpoint.startswith('leaderboard.')) %}active{% endif %}"
+                           href="#" id="communityDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-people me-1 fs-6"></i>
+                            <span class="position-relative d-inline-flex align-items-center me-1">
+                                <span>Community</span>
+                                <span id="community-nav-indicator" class="community-indicator-dot {% if not ((current_user.is_authenticated and pending_connections_count and pending_connections_count > 0) or (current_user.is_authenticated and unread_messages_count and unread_messages_count > 0)) %}d-none{% endif %}"></span>
+                            </span>
+                            <i class="bi bi-chevron-down community-chevron d-flex align-items-center"></i>
+                        </a>
+                        <ul class="dropdown-menu glass-dropdown community-dropdown-menu p-3" aria-labelledby="communityDropdown">
+                            <li>
+                                <a class="dropdown-item community-menu-item d-flex align-items-center p-3 rounded-3 {% if request.endpoint and request.endpoint.startswith('groups.') %}active{% endif %}" href="{{ url_for('groups.index') }}">
+                                    <div class="community-item-icon me-3 d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                                        <i class="bi bi-people fs-5"></i>
+                                    </div>
+                                    <div class="community-item-content flex-grow-1 min-w-0">
+                                        <div class="community-item-header d-flex align-items-center justify-content-between mb-1">
+                                            <span class="fw-bold community-item-title">Groups</span>
+                                        </div>
+                                        <div class="community-item-desc text-muted small">Create or join study groups</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item community-menu-item d-flex align-items-center p-3 rounded-3 {% if request.endpoint and request.endpoint.startswith('connections.') %}active{% endif %}" href="{{ url_for('connections.index') }}">
+                                    <div class="community-item-icon me-3 d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                                        <i class="bi bi-person-lines-fill fs-5"></i>
+                                    </div>
+                                    <div class="community-item-content flex-grow-1 min-w-0">
+                                        <div class="community-item-header d-flex align-items-center justify-content-between mb-1">
+                                            <span class="fw-bold community-item-title">Network</span>
+                                            {% if current_user.is_authenticated and pending_connections_count and pending_connections_count > 0 %}
+                                                <span class="badge rounded-pill bg-danger ms-2">{{ pending_connections_count }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="community-item-desc text-muted small">Manage your study connections</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item community-menu-item d-flex align-items-center p-3 rounded-3 {% if request.endpoint and request.endpoint.startswith('messages.') %}active{% endif %}" href="{{ url_for('messages.index') }}">
+                                    <div class="community-item-icon me-3 d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                                        <i class="bi bi-chat-dots-fill fs-5"></i>
+                                    </div>
+                                    <div class="community-item-content flex-grow-1 min-w-0">
+                                        <div class="community-item-header d-flex align-items-center justify-content-between mb-1">
+                                            <span class="fw-bold community-item-title">Messages</span>
+                                            {% if current_user.is_authenticated and unread_messages_count and unread_messages_count > 0 %}
+                                                <span id="navbar-unread-badge" class="badge rounded-pill bg-warning text-dark ms-2">{{ unread_messages_count }}</span>
+                                            {% else %}
+                                                <span id="navbar-unread-badge" class="badge rounded-pill bg-warning text-dark ms-2 d-none">0</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="community-item-desc text-muted small">Private conversations with students</div>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item community-menu-item d-flex align-items-center p-3 rounded-3 {% if request.endpoint and request.endpoint.startswith('leaderboard.') %}active{% endif %}" href="{{ url_for('leaderboard.index') }}">
+                                    <div class="community-item-icon me-3 d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                                        <i class="bi bi-trophy fs-5"></i>
+                                    </div>
+                                    <div class="community-item-content flex-grow-1 min-w-0">
+                                        <div class="community-item-header d-flex align-items-center justify-content-between mb-1">
+                                            <span class="fw-bold community-item-title">Leaderboard</span>
+                                        </div>
+                                        <div class="community-item-desc text-muted small">Top study points and ranking</div>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link position-relative {% if request.endpoint and request.endpoint.startswith('nearby.') %}active{% endif %}" href="{{ url_for('nearby.index') }}">
+                            <i class="bi bi-geo-alt-fill me-1"></i> Nearby
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('productivity.') %}active{% endif %}" href="{{ url_for('productivity.index') }}">
+                            <i class="bi bi-clock-history me-1"></i> Focus
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right Section: Auth & User Actions -->
+            <div class="navbar-right d-flex align-items-center flex-shrink-0 ms-auto my-2 my-lg-0 gap-2">
+                {% if current_user.is_authenticated %}
+                    <div class="nav-item dropdown">
+                        <a class="nav-link text-muted p-2" href="javascript:void(0)" role="button"
+                           title="No new notifications" aria-label="Notifications">
+                            <i class="bi bi-bell position-relative fs-6">
+                                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="display:none;"></span>
+                            </i>
+                        </a>
+                    </div>
+
+                    <!-- Ask Question Button -->
+                    <a class="btn btn-glow btn-sm text-nowrap d-flex align-items-center" href="{{ url_for('questions.ask') }}">
+                        <i class="bi bi-plus-circle me-1"></i> Ask
+                    </a>
 
                     <!-- Points Badge -->
-                    <li class="nav-item ms-2">
-                        <span class="nav-points-badge" id="nav-points" title="Your Points">
-                            <i class="bi bi-star-fill me-1"></i>
-                            <span id="nav-points-value">{{ user_points }}</span>
-                        </span>
-                    </li>
+                    <span class="nav-points-badge text-nowrap" id="nav-points" title="Your Points">
+                        <i class="bi bi-star-fill"></i>
+                        <span id="nav-points-value">{{ user_points }}</span>
+                    </span>
 
                     <!-- Streak Badge -->
                     {% if user_streak > 0 %}
-                    <li class="nav-item ms-1">
-                        <span class="nav-streak-badge" title="{{ user_streak }} day streak">
-                            <i class="bi bi-fire streak-flame"></i>
-                            <span>{{ user_streak }}</span>
-                        </span>
-                    </li>
+                    <span class="nav-streak-badge text-nowrap" title="{{ user_streak }} day streak">
+                        <i class="bi bi-fire streak-flame"></i>
+                        <span>{{ user_streak }}</span>
+                    </span>
                     {% endif %}
 
                     <!-- User Dropdown -->
-                    <li class="nav-item dropdown ms-2">
+                    <div class="nav-item dropdown ms-1">
                         <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#"
                            role="button" data-bs-toggle="dropdown">
                             {% if current_user.profile and current_user.profile.avatar_filename %}
-                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 32px; height: 32px; object-fit: cover;">
+                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 36px; height: 36px; object-fit: cover;">
                             {% else %}
                                 <div class="nav-avatar" style="background-color: {{ current_user.avatar_color }}">
                                     {{ current_user.initials }}
@@ -149,16 +192,15 @@
                                 </a>
                             </li>
                         </ul>
-                    </li>
+                    </div>
                 {% else %}
-                    <li class="nav-item ms-2">
-                        <a class="nav-link" href="{{ url_for('auth.login') }}">Sign In</a>
-                    </li>
-                    <li class="nav-item ms-1">
-                        <a class="btn btn-glow btn-sm" href="{{ url_for('auth.register') }}">Sign Up</a>
-                    </li>
+                    <!-- Auth Buttons -->
+                    <div class="d-flex align-items-center gap-3">
+                        <a class="nav-link px-2 fw-medium text-nowrap d-flex align-items-center" href="{{ url_for('auth.login') }}">Sign In</a>
+                        <a class="btn btn-glow btn-sm text-nowrap px-3 d-flex align-items-center" href="{{ url_for('auth.register') }}">Sign Up</a>
+                    </div>
                 {% endif %}
-            </ul>
+            </div>
         </div>
     </div>
 </nav>

@@ -1,5 +1,8 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Config:
@@ -12,7 +15,12 @@ class Config:
     }
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '').strip() or 'sqlite:///studyconnect.db'
+    _db_url = os.environ.get('DATABASE_URL', '').strip()
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql+psycopg://', 1)
+    elif _db_url.startswith('postgresql://') and not _db_url.startswith('postgresql+'):
+        _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///studyconnect.db'
 
     # Mail
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
