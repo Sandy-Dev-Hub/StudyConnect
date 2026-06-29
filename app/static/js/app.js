@@ -244,17 +244,29 @@ function initLiveSearch() {
                     return;
                 }
 
-                dropdown.innerHTML = data.results.map((q, idx) => `
-                    <a href="/questions/${q.id}" id="search-item-${idx}" class="search-result-item" role="option" aria-selected="false">
-                        <div class="search-result-title">${escapeHtml(q.title)}</div>
-                        <div class="search-result-meta">
+                dropdown.innerHTML = data.results.map((q, idx) => {
+                    const safeTitle = escapeHtml(q.title).replace(/&lt;mark&gt;/g, '<mark class="bg-warning text-dark px-1 rounded">').replace(/&lt;\/mark&gt;/g, '</mark>');
+                    const safeExcerpt = q.excerpt ? `<div class="search-result-excerpt text-muted small mt-1 text-truncate" style="max-width: 280px;">${escapeHtml(q.excerpt).replace(/&lt;mark&gt;/g, '<mark class="bg-warning text-dark px-1 rounded">').replace(/&lt;\/mark&gt;/g, '</mark>')}</div>` : '';
+                    const badgeText = q.type === 'group' ? 'Group' : 'Q&A';
+                    const badgeClass = q.type === 'group' ? 'bg-info text-dark' : 'bg-primary text-white';
+                    const metaInfo = q.type === 'group' ? `${q.answer_count} member${q.answer_count !== 1 ? 's' : ''}` : `${q.answer_count} answer${q.answer_count !== 1 ? 's' : ''}`;
+                    const targetUrl = q.url || `/questions/${q.id}`;
+
+                    return `
+                    <a href="${targetUrl}" id="search-item-${idx}" class="search-result-item" role="option" aria-selected="false">
+                        <div class="search-result-title d-flex align-items-center justify-content-between">
+                            <span>${safeTitle}</span>
+                            <span class="badge ${badgeClass} ms-2 flex-shrink-0" style="font-size:0.7rem;">${badgeText}</span>
+                        </div>
+                        ${safeExcerpt}
+                        <div class="search-result-meta mt-1">
                             <span class="tag tag-subject">${escapeHtml(q.subject_tag)}</span>
-                            <span class="ms-2">${q.answer_count} answer${q.answer_count !== 1 ? 's' : ''}</span>
+                            <span class="ms-2">${metaInfo}</span>
                             <span class="ms-2">${q.time_ago}</span>
                             ${q.is_resolved ? '<span class="ms-2 text-success" title="Resolved"><i class="bi bi-check-circle-fill"></i></span>' : ''}
                         </div>
-                    </a>
-                `).join('');
+                    </a>`;
+                }).join('');
                 dropdown.classList.remove('d-none');
                 input.setAttribute('aria-expanded', 'true');
                 selectedIndex = -1;

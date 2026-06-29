@@ -161,6 +161,20 @@ Phase 4 introduces powerful productivity tools, study tracking, and personal ana
 
 ---
 
+## 🔍 Phase 5 — Production Polish & Enterprise Features
+
+Phase 5 elevates StudyConnect into a high-performance, enterprise-grade application ready for public deployment on modern cloud platforms.
+
+### 🔍 Phase 5B — PostgreSQL Search Engine
+- **Generated TSVector Columns**: Automated vector synchronization via PostgreSQL dialect DDL (`GENERATED ALWAYS AS (...) STORED`).
+- **GIN Indexing**: Inverted index creation across all searchable text columns for sub-millisecond query lookups.
+- **Relevance Ranking (`ts_rank`)**: Intelligent result ordering based on term frequency and matching density.
+- **Highlighted Excerpts (`ts_headline`)**: Dynamic `<mark>` HTML wrapping around matching search terms.
+- **Prefix Matching**: Prefix query support (`to_tsquery('english', 'term:*')`) allowing rapid partial-word autocomplete.
+- **Categorized Suggestions**: Interactive floating navbar search delivering structured split results for Questions and Study Groups.
+
+---
+
 ## 📸 Screenshots & Placeholders
 
 ### Productivity Dashboard
@@ -203,7 +217,7 @@ Phase 4 introduces powerful productivity tools, study tracking, and personal ana
 | **Phase 2** | ✅ Completed | Community, Student Profiles, Study Groups, Connections & Real-Time DM |
 | **Phase 3** | ✅ Completed | Nearby Study Discovery, Interactive Map, Storage Abstraction & Requests |
 | **Phase 4** | ✅ Completed | Productivity (Pomodoro Timer, Group Sessions & Study Goals) |
-| **Phase 5** | 🚧 Planned | Production Polish, Performance Tuning & Deployment |
+| **Phase 5** | 🚧 In Progress | Enterprise FTS Search Engine (Completed), Notifications, Performance & Deployment |
 
 ---
 
