@@ -17,9 +17,9 @@
   --glass-border-hover: rgba(255, 255, 255, 0.15);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 
-  --text-1: rgba(255, 255, 255, 0.90);
-  --text-2: rgba(255, 255, 255, 0.45);
-  --text-3: rgba(255, 255, 255, 0.25);
+  --text-1: rgba(255, 255, 255, 0.95);
+  --text-2: rgba(255, 255, 255, 0.68);
+  --text-3: rgba(255, 255, 255, 0.50);
 
   --success: #4ade80;
   --points-gold: #F5C518;
@@ -2710,5 +2710,81 @@ select.glass-input[data-customized="true"] {
   background-color: var(--glass-hover);
 }
 
+/* ===================================================
+   PHASE 5D: RESPONSIVE UI & ACCESSIBILITY (WCAG 2.1 AA)
+   =================================================== */
 
+/* Visible Focus Outlines (Keyboard Accessibility) */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible, .nav-link:focus-visible, .dropdown-item:focus-visible {
+  outline: 2px solid var(--amber) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 4px var(--amber-glow) !important;
+}
 
+/* Screen Reader Only Utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Responsive Tables */
+.table-responsive {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+table {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Mobile & Tablet Breakpoints (44x44px Touch Targets & Grid Degradation) */
+@media (max-width: 992px) {
+  .row-cols-lg-4 > * {
+    flex: 0 0 auto;
+    width: 50% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Ensure 44x44px minimum touch targets on mobile/tablet */
+  button, .btn, .nav-link, .dropdown-item, .page-link, input[type="button"], input[type="submit"], .mark-read-btn, .delete-notif-btn, .vote-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .sc-navbar {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .sc-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .row-cols-lg-4 > *, .row-cols-md-3 > *, .row-cols-sm-2 > * {
+    flex: 0 0 auto;
+    width: 100% !important;
+  }
+
+  h1, .h1 {
+    font-size: 1.85rem !important;
+  }
+
+  h2, .h2 {
+    font-size: 1.5rem !important;
+  }
+}
