@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: studyconnect:v1.0.0
+    container_name: studyconnect_web
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_ENV=production
+      # Neon Managed PostgreSQL connection (must be provided via environment or .env file)
+      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:password@ep-example.aws.neon.tech/neondb?sslmode=require}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change_me_in_production_environment}
+      - GUNICORN_WORKERS=4
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_uploads:/app/app/static/uploads
+    networks:
+      - studyconnect_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: studyconnect_redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - studyconnect_network
+
+volumes:
+  redis_data:
+  app_uploads:
+
+networks:
+  studyconnect_network:
+    driver: bridge

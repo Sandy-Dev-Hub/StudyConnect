@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+instance/
+studyconnect.db
+*.db
+*.log
+.env
+tests/
+benchmark_and_test.py
+C:\Users\cvbha\.gemini\antigravity-ide\brain\3021b1d0-dd73-4811-8038-fe40d464cfcb/
