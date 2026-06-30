@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 from flask import jsonify, request, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import func
@@ -6,7 +7,7 @@ from sqlalchemy import func
 from app.api import api_bp
 from app.models.question import Question
 from app.models.group import StudyGroup
-from app.extensions import db
+from app.extensions import db, cache
 
 
 def build_tsquery_str(q):
@@ -16,9 +17,36 @@ def build_tsquery_str(q):
     return ' & '.join([f"{w}:*" for w in words])
 
 
+@api_bp.route('/health')
+def health():
+    """Health check endpoint returning DB, Redis, SocketIO status and app version."""
+    db_status = "ok"
+    try:
+        db.session.execute(db.text("SELECT 1"))
+    except Exception as e:
+        db_status = f"error: {e}"
+
+    redis_status = "ok"
+    try:
+        cache.set("health_test", "1", timeout=5)
+    except Exception as e:
+        redis_status = f"error: {e}"
+
+    socketio_status = "ok"
+
+    return jsonify({
+        'status': 'ok' if (db_status == 'ok' and redis_status == 'ok') else 'degraded',
+        'database': db_status,
+        'redis': redis_status,
+        'socketio': socketio_status,
+        'version': '1.0.0',
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    })
+
+
 @api_bp.route('/search')
 def search():
-    """Live enterprise Full Text Search for questions and study groups."""
+    """Live enterprise Full Text Search for questions and study groups with Redis caching."""
     q = request.args.get('q', '', type=str).strip()
     category = request.args.get('category', 'all', type=str)
     subject = request.args.get('subject', '', type=str)
@@ -26,6 +54,11 @@ def search():
 
     if len(q) < 2:
         return jsonify({'results': []})
+
+    cache_key = f"search_suggestions:{q}:{category}:{subject}:{exam}"
+    cached_results = cache.get(cache_key)
+    if cached_results is not None:
+        return jsonify({'results': cached_results})
 
     results = []
     is_pg = (db.engine.dialect.name == 'postgresql')
@@ -145,7 +178,7 @@ def search():
                         'time_ago': group.created_at.strftime('%b %d, %Y'),
                         'url': url_for('groups.detail', group_id=group.id)
                     })
-
+    cache.set(cache_key, results, timeout=30)
     return jsonify({'results': results})
 
 
@@ -158,3 +191,4 @@ def user_stats():
         'current_streak': current_user.current_streak,
         'longest_streak': current_user.longest_streak,
     })
+

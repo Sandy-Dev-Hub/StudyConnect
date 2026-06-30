@@ -1,10 +1,27 @@
 import os
+import time
 import logging
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
-from flask import Flask
+from flask import Flask, g, request
 import markdown2
 
 from app.config import config_by_name
+
+# Setup slow query logging hook
+@event.listens_for(Engine, "before_cursor_execute")
+def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    conn.info.setdefault("query_start_time", []).append(time.time())
+
+@event.listens_for(Engine, "after_cursor_execute")
+def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    times = conn.info.get("query_start_time", [])
+    if times:
+        start_time = times.pop(-1)
+        duration = (time.time() - start_time) * 1000
+        if duration > 100:
+            logging.warning(f"[SLOW QUERY >100ms] ({duration:.2f}ms): {statement[:200]}...")
 
 
 def create_app(config_name=None):
@@ -17,6 +34,9 @@ def create_app(config_name=None):
 
     # Initialize extensions
     _init_extensions(app)
+
+    # Register middleware
+    _register_middleware(app)
 
     # Register blueprints
     _register_blueprints(app)
@@ -36,6 +56,34 @@ def create_app(config_name=None):
         logging.basicConfig(level=logging.INFO)
 
     return app
+
+
+def _register_middleware(app):
+    """Register HTTP request timing, security headers, and asset caching middleware."""
+    @app.before_request
+    def before_request_timing():
+        g.start_time = time.time()
+
+    @app.after_request
+    def after_request_timing_and_headers(response):
+        if hasattr(g, 'start_time'):
+            duration = (time.time() - g.start_time) * 1000
+            if request.path.startswith('/api/'):
+                app.logger.info(f"[API LATENCY] {request.method} {request.path} -> {response.status_code} ({duration:.2f}ms)")
+            elif duration > 500:
+                app.logger.warning(f"[SLOW REQUEST >500ms] {request.method} {request.path} -> {response.status_code} ({duration:.2f}ms)")
+
+        # Security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+        # Static asset optimization (caching headers)
+        if request.path.startswith('/static/'):
+            response.headers['Cache-Control'] = 'public, max-age=31536000'
+
+        return response
 
 
 def _init_extensions(app):

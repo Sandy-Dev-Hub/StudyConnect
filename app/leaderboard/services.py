@@ -139,14 +139,21 @@ def get_top_users(limit=10):
         'initials': r.username[:2].upper()
     } for r in results]
 
-    cache.set(cache_key, top, timeout=120)
+    cache.set(cache_key, top, timeout=300)
     return top
 
 
 def get_user_rank(user_id):
-    """Get the all-time rank of a specific user based on total_points."""
+    """Get the all-time rank of a specific user based on total_points with Redis caching."""
+    cache_key = f'user:rank:{user_id}'
+    cached_rank = cache.get(cache_key)
+    if cached_rank is not None:
+        return cached_rank
+
     user = db.session.get(User, user_id)
     if not user:
         return None
     rank = db.session.query(db.func.count(User.id)).filter(User.total_points > user.total_points).scalar()
-    return (rank or 0) + 1
+    res = (rank or 0) + 1
+    cache.set(cache_key, res, timeout=300)
+    return res

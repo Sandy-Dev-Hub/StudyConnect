@@ -1,5 +1,6 @@
 from flask import render_template, request, current_app, redirect, url_for, flash
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 
 from app.main import main_bp
 from app.models.question import Question
@@ -7,7 +8,7 @@ from app.models.answer import Answer
 from app.models.user import User
 from app.leaderboard.services import get_top_users, get_user_rank
 from app.points.services import get_user_points_history
-from app.extensions import db
+from app.extensions import db, cache
 from app.main.forms import ProfileEditForm
 from app.main.services import get_or_create_profile, update_user_profile
 from app.connections.services import get_connection_status, get_connection
@@ -15,23 +16,28 @@ from app.connections.services import get_connection_status, get_connection
 
 @main_bp.route('/')
 def home():
-    # Get recent questions
-    recent_questions = Question.query.order_by(
-        Question.created_at.desc()
-    ).limit(6).all()
+    # Get recent questions with eager loading
+    recent_questions = Question.query.options(
+        joinedload(Question.author).joinedload(User.profile)
+    ).order_by(Question.created_at.desc()).limit(6).all()
 
     # Get top users for leaderboard widget
     top_users = get_top_users(limit=10)
 
-    # Get stats
-    total_questions = Question.query.count()
-    total_users = User.query.count()
+    # Get cached stats (5m TTL)
+    stats = cache.get('home:statistics')
+    if stats is None:
+        stats = {
+            'total_questions': Question.query.count(),
+            'total_users': User.query.count()
+        }
+        cache.set('home:statistics', stats, timeout=300)
 
     return render_template('main/home.html',
                            recent_questions=recent_questions,
                            top_users=top_users,
-                           total_questions=total_questions,
-                           total_users=total_users)
+                           total_questions=stats['total_questions'],
+                           total_users=stats['total_users'])
 
 
 @main_bp.route('/profile/<int:user_id>')
@@ -51,11 +57,11 @@ def profile(user_id):
 
     items = None
     if tab == 'answers':
-        items = user.answers.order_by(
+        items = user.answers.options(joinedload(Answer.question)).order_by(
             Answer.created_at.desc()
         ).paginate(page=page, per_page=10, error_out=False)
     elif tab == 'questions':
-        items = user.questions.order_by(
+        items = user.questions.options(joinedload(Question.author).joinedload(User.profile)).order_by(
             Question.created_at.desc()
         ).paginate(page=page, per_page=10, error_out=False)
 

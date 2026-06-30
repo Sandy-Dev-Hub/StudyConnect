@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timezone, timedelta
 from flask import current_app, url_for, has_request_context
+from sqlalchemy.orm import joinedload
 from app.extensions import db, socketio
 from app.models import User, UserProfile, StudyRequest, Conversation
 from app.nearby.storage import get_storage
@@ -94,7 +95,7 @@ class LocationService:
         if not found_uids:
             return []
 
-        users = User.query.filter(User.id.in_(found_uids)).all()
+        users = User.query.options(joinedload(User.profile)).filter(User.id.in_(found_uids)).all()
         user_map = {u.id: u for u in users}
 
         for uid, dist in raw_results:

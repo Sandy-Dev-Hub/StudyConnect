@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request, abort, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 
 from app.groups import groups_bp
 from app.groups.forms import GroupForm
@@ -10,6 +11,7 @@ from app.groups.services import (
 )
 from app.models.group import StudyGroup, GroupMember
 from app.models.user import User
+from app.models.question import Question
 from app.extensions import db
 
 @groups_bp.route('/')
@@ -19,7 +21,7 @@ def index():
     exam = request.args.get('exam', '', type=str)
     filter_type = request.args.get('filter', 'active', type=str)
 
-    query = StudyGroup.query
+    query = StudyGroup.query.options(joinedload(StudyGroup.members))
 
     if q:
         query = query.filter(StudyGroup.name.ilike(f'%{q}%') | StudyGroup.description.ilike(f'%{q}%'))
@@ -84,9 +86,13 @@ def detail(group_id):
     questions = []
     members = []
     if tab == 'questions':
-        questions = group.questions.order_by(desc('created_at')).all()
+        questions = group.questions.options(
+            joinedload(Question.author).joinedload(User.profile)
+        ).order_by(desc('created_at')).all()
     elif tab == 'members':
-        members = group.members.order_by(desc('role'), desc('joined_at')).all()
+        members = group.members.options(
+            joinedload(GroupMember.user).joinedload(User.profile)
+        ).order_by(desc('role'), desc('joined_at')).all()
 
     return render_template('groups/detail.html',
                            group=group,

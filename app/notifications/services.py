@@ -1,13 +1,14 @@
 import logging
-from app.extensions import db, socketio
+from sqlalchemy.orm import joinedload
+from app.extensions import db, socketio, cache
 from app.models.notification import Notification
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
 
 def create_notification(user_id, title, message, notification_type, sender_id=None, link_url=None):
     """Create a new notification and emit a real-time Socket.IO event."""
-    # Don't notify yourself for actions you took
     if sender_id and int(user_id) == int(sender_id):
         return None
 
@@ -23,7 +24,9 @@ def create_notification(user_id, title, message, notification_type, sender_id=No
         db.session.add(notification)
         db.session.commit()
 
-        # Real-time socket emit
+        # Invalidate notification count cache
+        cache.delete(f"unread_notif_count_{user_id}")
+
         try:
             socketio.emit('new_notification', notification.to_dict(), room=f"user_{user_id}")
         except Exception as e:
@@ -37,16 +40,23 @@ def create_notification(user_id, title, message, notification_type, sender_id=No
 
 
 def get_user_notifications(user_id, limit=20, unread_only=False):
-    """Fetch recent notifications for a user."""
-    query = Notification.query.filter_by(user_id=user_id)
+    """Fetch recent notifications for a user with eager loading of sender profile."""
+    query = Notification.query.options(
+        joinedload(Notification.sender).joinedload(User.profile)
+    ).filter_by(user_id=user_id)
     if unread_only:
         query = query.filter_by(is_read=False)
     return query.order_by(Notification.created_at.desc()).limit(limit).all()
 
 
 def get_unread_notification_count(user_id):
-    """Get total count of unread notifications for a user."""
-    return Notification.query.filter_by(user_id=user_id, is_read=False).count()
+    """Get total count of unread notifications for a user with Redis caching (30s TTL)."""
+    cache_key = f"unread_notif_count_{user_id}"
+    count = cache.get(cache_key)
+    if count is None:
+        count = Notification.query.filter_by(user_id=user_id, is_read=False).count()
+        cache.set(cache_key, count, timeout=30)
+    return count
 
 
 def mark_notification_read(notification_id, user_id):
@@ -55,6 +65,7 @@ def mark_notification_read(notification_id, user_id):
     if notification and not notification.is_read:
         notification.is_read = True
         db.session.commit()
+        cache.delete(f"unread_notif_count_{user_id}")
         return True
     return False
 
@@ -63,6 +74,7 @@ def mark_all_notifications_read(user_id):
     """Mark all notifications for a user as read."""
     Notification.query.filter_by(user_id=user_id, is_read=False).update({'is_read': True})
     db.session.commit()
+    cache.delete(f"unread_notif_count_{user_id}")
     return True
 
 
@@ -72,5 +84,6 @@ def delete_notification(notification_id, user_id):
     if notification:
         db.session.delete(notification)
         db.session.commit()
+        cache.delete(f"unread_notif_count_{user_id}")
         return True
     return False

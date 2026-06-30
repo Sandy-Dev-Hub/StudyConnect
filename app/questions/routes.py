@@ -1,11 +1,13 @@
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 
 from app.questions import questions_bp
 from app.questions.forms import QuestionForm
 from app.questions.services import create_question, get_feed, search_questions
 from app.points.services import record_activity
 from app.models.question import Question
+from app.models.user import User
 from app.extensions import db
 
 
@@ -20,7 +22,7 @@ def feed():
     per_page = current_app.config.get('QUESTIONS_PER_PAGE', 12)
 
     if q:
-        pagination = search_questions(q, page=page, per_page=per_page)
+        pagination = search_questions(q, page=page, per_page=per_page, subject=subject, exam=exam)
     else:
         pagination = get_feed(page=page, per_page=per_page, subject=subject, exam=exam, sort=sort)
 
@@ -69,7 +71,10 @@ def ask():
 
 @questions_bp.route('/<int:question_id>')
 def detail(question_id):
-    question = db.get_or_404(Question, question_id)
+    question = Question.query.options(
+        joinedload(Question.author).joinedload(User.profile),
+        joinedload(Question.study_group)
+    ).get_or_404(question_id)
 
     # Increment view count
     question.increment_views()

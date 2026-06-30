@@ -4,9 +4,13 @@ import uuid
 from flask import current_app
 from werkzeug.utils import secure_filename
 from PIL import Image as PILImage
+import re
+from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models.question import Question
+from app.models.user import User
 
 
 def allowed_file(filename):
@@ -70,8 +74,11 @@ def create_question(title, body, subject_tag, exam_tag, author_id, image_file=No
 
 
 def get_feed(page=1, per_page=12, subject=None, exam=None, sort='newest'):
-    """Get paginated question feed with optional filters."""
-    query = Question.query
+    """Get paginated question feed with optional filters and eager loading."""
+    query = Question.query.options(
+        joinedload(Question.author).joinedload(User.profile),
+        joinedload(Question.study_group)
+    )
 
     if subject:
         query = query.filter(Question.subject_tag == subject)
@@ -92,13 +99,40 @@ def get_feed(page=1, per_page=12, subject=None, exam=None, sort='newest'):
     return query.paginate(page=page, per_page=per_page, error_out=False)
 
 
-def search_questions(query_text, page=1, per_page=12):
-    """Search questions by title or body content."""
-    search = f'%{query_text}%'
-    query = Question.query.filter(
-        db.or_(
-            Question.title.ilike(search),
-            Question.body.ilike(search)
-        )
-    ).order_by(Question.created_at.desc())
+def search_questions(query_text, page=1, per_page=12, subject=None, exam=None):
+    """Search questions by title or body content with enterprise FTS support and eager loading."""
+    query = Question.query.options(
+        joinedload(Question.author).joinedload(User.profile),
+        joinedload(Question.study_group)
+    )
+
+    if subject:
+        query = query.filter(Question.subject_tag == subject)
+    if exam:
+        query = query.filter(Question.exam_tag == exam)
+
+    is_pg = (db.engine.dialect.name == 'postgresql')
+    pg_success = False
+
+    if is_pg and query_text and len(query_text.strip()) >= 2:
+        words = re.findall(r'\w+', query_text.strip())
+        if words:
+            tsquery_str = ' & '.join([f"{w}:*" for w in words])
+            try:
+                tsquery = func.to_tsquery('english', tsquery_str)
+                rank = func.ts_rank(Question.search_vector, tsquery)
+                query = query.filter(Question.search_vector.op('@@')(tsquery)).order_by(rank.desc(), Question.created_at.desc())
+                pg_success = True
+            except Exception:
+                pg_success = False
+
+    if not is_pg or (is_pg and not pg_success):
+        search = f'%{query_text}%'
+        query = query.filter(
+            db.or_(
+                Question.title.ilike(search),
+                Question.body.ilike(search)
+            )
+        ).order_by(Question.created_at.desc())
+
     return query.paginate(page=page, per_page=per_page, error_out=False)

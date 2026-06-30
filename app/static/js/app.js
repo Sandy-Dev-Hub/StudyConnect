@@ -196,6 +196,7 @@ function initLiveSearch() {
 
     let debounceTimer;
     let selectedIndex = -1;
+    let searchAbortController = null;
 
     function updateSelection() {
         const items = dropdown.querySelectorAll('.search-result-item[href]');
@@ -220,6 +221,7 @@ function initLiveSearch() {
         const query = input.value.trim();
 
         if (query.length < 2) {
+            if (searchAbortController) searchAbortController.abort();
             dropdown.classList.add('d-none');
             dropdown.innerHTML = '';
             input.setAttribute('aria-expanded', 'false');
@@ -227,9 +229,22 @@ function initLiveSearch() {
             return;
         }
 
+        dropdown.innerHTML = `
+            <div class="p-3 text-center text-muted small">
+                <div class="spinner-border spinner-border-sm text-accent me-2" role="status"></div>
+                Searching...
+            </div>
+        `;
+        dropdown.classList.remove('d-none');
+
         debounceTimer = setTimeout(async () => {
+            if (searchAbortController) searchAbortController.abort();
+            searchAbortController = new AbortController();
+
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+                    signal: searchAbortController.signal
+                });
                 const data = await response.json();
 
                 if (data.results.length === 0) {
@@ -280,9 +295,11 @@ function initLiveSearch() {
                     });
                 });
             } catch (err) {
-                dropdown.classList.add('d-none');
-                input.setAttribute('aria-expanded', 'false');
-                selectedIndex = -1;
+                if (err.name !== 'AbortError') {
+                    dropdown.classList.add('d-none');
+                    input.setAttribute('aria-expanded', 'false');
+                    selectedIndex = -1;
+                }
             }
         }, 300);
     });
@@ -908,7 +925,11 @@ function initNotifications() {
 
     // Socket.IO real-time listener
     if (typeof io !== 'undefined') {
-        const socket = io();
+        if (!window._appSocket) {
+            window._appSocket = io();
+        }
+        const socket = window._appSocket;
+        socket.off('new_notification');
         socket.on('new_notification', (notif) => {
             updateUnreadBadge(1, true);
             showNotificationToast(notif);
