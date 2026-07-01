@@ -13,7 +13,7 @@ This document outlines the step-by-step instructions for deploying **StudyConnec
    [ Load Balancer / Proxy ]
              │
              ▼
-[ Gunicorn + Eventlet Workers ] ──► [ Redis 7 Cache & Pub/Sub ]
+[ Gunicorn + Gevent Workers ] ──► [ Redis 7 Cache & Pub/Sub ]
              │
              ▼
 [ Neon Cloud PostgreSQL (Serverless) ]
@@ -21,7 +21,7 @@ This document outlines the step-by-step instructions for deploying **StudyConnec
 
 ### Key Architectural Guidelines
 1. **Managed Database**: Do not run local PostgreSQL instances in containers. Connect directly to **Neon Managed Cloud PostgreSQL** (`postgresql://...`) via environment variables.
-2. **Real-Time WebSockets**: Gunicorn must use the **Eventlet** worker class (`worker_class = "eventlet"`) to handle concurrent WebSockets and background tasks cleanly.
+2. **Real-Time WebSockets**: Gunicorn must use the **Gevent** worker class (`worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"`) to handle concurrent WebSockets and background tasks cleanly.
 3. **Caching & Notification Queues**: Redis (`redis://...`) stores 5-minute leaderboards, analytics memoization, live search queries, and Socket.IO Pub/Sub messaging.
 
 ---

@@ -262,7 +262,7 @@ Phase 5 elevates StudyConnect into a high-performance, enterprise-grade applicat
 - **Redis Timer Persistence**: Reliable shared room state and countdown storage
 - **Socket.IO Synchronization**: Low-latency WebSocket event broadcasting
 - **Gunicorn**: WSGI HTTP server for production deployment
-- **Eventlet**: Concurrent networking library for WebSocket support
+- **Gevent**: High-performance greenlet networking library for WebSocket support
 
 ---
 
@@ -354,7 +354,7 @@ App runs locally at `http://localhost:5000`
 2. Configure a serverless Neon PostgreSQL `DATABASE_URL` instance
 3. Set real SMTP server credentials and `MAIL_SUPPRESS_SEND=0`
 4. Configure `REDIS_URL` for production WebSocket Pub/Sub and GEO indexing
-5. Run using Eventlet worker class: `gunicorn -k eventlet -w 1 -b 0.0.0.0:8000 run:app`
+5. Run using Gevent worker class: `gunicorn -c gunicorn_config.py run:app`
 
 ---
 
@@ -397,7 +397,7 @@ App runs locally at `http://localhost:5000`
 ### ✅ Phase 5E — Production Deployment & Cloud Orchestration
 - **Production Containerization:** Optimized multi-stage `Dockerfile` running non-root runtime user (`studyconnect`).
 - **Cloud Database Ready:** Zero local DB containers in `docker-compose.yml`; natively connects to serverless **Neon Managed PostgreSQL**.
-- **Real-Time Eventlet Workers:** Production `gunicorn_config.py` configured with Eventlet async workers for seamless Socket.IO WebSocket handling.
+- **Real-Time Gevent Workers:** Production `gunicorn_config.py` configured with Gevent WebSocket workers for seamless Socket.IO WebSocket handling.
 - **Health Diagnostics:** Built-in `GET /api/health` endpoint monitoring live DB, Redis, and Socket.IO status.
 - **Deployment Guide:** Comprehensive deployment documentation in `DEPLOYMENT.md`.
 

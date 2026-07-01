@@ -1,5 +1,5 @@
-import eventlet
-eventlet.monkey_patch()
+from gevent import monkey
+monkey.patch_all()
 
 import os
 import time
@@ -101,7 +101,7 @@ def _init_extensions(app):
     cache.init_app(app)
     socketio_kwargs = {
         'cors_allowed_origins': '*',
-        'async_mode': 'eventlet',
+        'async_mode': 'gevent',
         'ping_timeout': 60,
         'ping_interval': 25
     }
