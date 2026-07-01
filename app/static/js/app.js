@@ -2,6 +2,25 @@
    StudyConnect — Main JavaScript
    =================================================== */
 
+window.getAppSocket = function() {
+    if (typeof io !== 'undefined') {
+        if (!window._appSocket) {
+            window._appSocket = io({
+                withCredentials: true,
+                transports: ['websocket', 'polling']
+            });
+            window.socket = window._appSocket;
+        }
+        return window._appSocket;
+    }
+    return null;
+};
+
+// Immediately initialize socket if io is available
+if (typeof io !== 'undefined') {
+    window.getAppSocket();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initScrollAnimations();
     initVoting();
@@ -924,11 +943,8 @@ function initNotifications() {
     });
 
     // Socket.IO real-time listener
-    if (typeof io !== 'undefined') {
-        if (!window._appSocket) {
-            window._appSocket = io();
-        }
-        const socket = window._appSocket;
+    const socket = window.getAppSocket ? window.getAppSocket() : null;
+    if (socket) {
         socket.off('new_notification');
         socket.on('new_notification', (notif) => {
             updateUnreadBadge(1, true);

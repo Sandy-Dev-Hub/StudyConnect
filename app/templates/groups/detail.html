@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    const socket = io();
+    const socket = window.getAppSocket ? window.getAppSocket() : io();
     socket.on('connect', () => {
         socket.emit('join_group_timer', { group_id: groupId });
     });

@@ -96,7 +96,10 @@ def _init_extensions(app):
     mail.init_app(app)
     csrf.init_app(app)
     cache.init_app(app)
-    socketio.init_app(app, cors_allowed_origins='*')
+    socketio_kwargs = {'cors_allowed_origins': '*'}
+    if app.config.get('REDIS_URL'):
+        socketio_kwargs['message_queue'] = app.config.get('REDIS_URL')
+    socketio.init_app(app, **socketio_kwargs)
 
     with app.app_context():
         from app.models import User, Question, Answer, Vote, PointsLog, StudyStreak, StudyGroup, GroupMember, UserProfile, Connection, Conversation, Message, StudyRequest, StudySession, PomodoroRoom, StudyGoal  # noqa: F401

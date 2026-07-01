@@ -293,39 +293,46 @@
         initMap();
 
         // SocketIO Listeners
-        if (window.socket) {
-            window.socket.emit('join_nearby_feed');
+        const socket = window.getAppSocket ? window.getAppSocket() : (window.socket || (typeof io !== 'undefined' ? io() : null));
+        if (socket) {
+            window.socket = socket;
+            socket.emit('join_nearby_feed');
 
-            window.socket.on('location_started', (data) => {
-    if (isSharing && data.user_id !== {{ current_user.id }}) {
-        fetchNearbyStudents();
-    }
-   });
+            socket.off('location_started');
+            socket.on('location_started', (data) => {
+                if (isSharing && data.user_id !== {{ current_user.id }}) {
+                    fetchNearbyStudents();
+                }
+            });
 
-    window.socket.on('location_stopped', (data) => {
-        if (peerMarkers[data.user_id]) {
-            map.removeLayer(peerMarkers[data.user_id]);
-            delete peerMarkers[data.user_id];
+            socket.off('location_stopped');
+            socket.on('location_stopped', (data) => {
+                if (peerMarkers[data.user_id]) {
+                    map.removeLayer(peerMarkers[data.user_id]);
+                    delete peerMarkers[data.user_id];
+                }
+                if (isSharing) fetchNearbyStudents();
+            });
+
+            socket.off('study_request_received');
+            socket.on('study_request_received', (data) => {
+                loadPendingRequests();
+                showToast(`New study request from ${data.requester_username}!`, 'info');
+            });
+
+            socket.off('study_request_accepted');
+            socket.on('study_request_accepted', (data) => {
+                showToast(`${data.recipient_username} accepted your study request! Opening chat...`, 'success');
+                setTimeout(() => {
+                    window.location.href = `/messages/?open_dm=${data.conversation_id}`;
+                }, 1500);
+            });
+
+            socket.off('study_request_rejected');
+            socket.on('study_request_rejected', (data) => {
+                showToast(`${data.recipient_username} declined the study request.`, 'warning');
+            });
         }
-        if (isSharing) fetchNearbyStudents();
-    });
-
-    window.socket.on('study_request_received', (data) => {
-        loadPendingRequests();
-        showToast(`New study request from ${data.requester_username}!`, 'info');
-    });
-
-    window.socket.on('study_request_accepted', (data) => {
-        showToast(`${data.recipient_username} accepted your study request! Opening chat...`, 'success');
-        setTimeout(() => {
-            window.location.href = `/messages/?open_dm=${data.conversation_id}`;
-        }, 1500);
-    });
-
-    window.socket.on('study_request_rejected', (data) => {
-        showToast(`${data.recipient_username} declined the study request.`, 'warning');
-    });
-    }
 
     function updateSharingUI(sharing, expiresAt = null) {
         isSharing = sharing;

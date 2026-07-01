@@ -188,7 +188,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const currentUserId = {{ current_user.id }};
-    const socket = io();
+    const socket = window.getAppSocket ? window.getAppSocket() : io();
     let currentChatType = null;
     let currentTargetId = null;
     let typingTimeout = null;
@@ -348,7 +348,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1500);
     });
 
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
         const text = input.value.trim();
         if (!text || !currentChatType || !currentTargetId) return;
 

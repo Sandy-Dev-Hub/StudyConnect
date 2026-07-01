@@ -17,6 +17,14 @@ from app.extensions import db
 def index():
     active_user_id = request.args.get('user_id', type=int)
     active_group_id = request.args.get('group_id', type=int)
+    open_dm_id = request.args.get('open_dm', type=int) or request.args.get('conversation_id', type=int)
+
+    if open_dm_id and not active_user_id:
+        conv = db.session.get(Conversation, open_dm_id)
+        if conv and (conv.user1_id == current_user.id or conv.user2_id == current_user.id):
+            other = conv.get_other_user(current_user.id)
+            if other:
+                active_user_id = other.id
 
     conversations = get_user_conversations(current_user.id)
     user_groups = [m.group for m in current_user.group_memberships.all()]
