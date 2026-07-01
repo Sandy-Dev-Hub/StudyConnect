@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import unittest
 from unittest.mock import patch
 from app import create_app

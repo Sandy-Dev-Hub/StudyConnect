@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import time
 import logging
@@ -96,7 +99,12 @@ def _init_extensions(app):
     mail.init_app(app)
     csrf.init_app(app)
     cache.init_app(app)
-    socketio_kwargs = {'cors_allowed_origins': '*'}
+    socketio_kwargs = {
+        'cors_allowed_origins': '*',
+        'async_mode': 'eventlet',
+        'ping_timeout': 60,
+        'ping_interval': 25
+    }
     if app.config.get('REDIS_URL'):
         socketio_kwargs['message_queue'] = app.config.get('REDIS_URL')
     socketio.init_app(app, **socketio_kwargs)
