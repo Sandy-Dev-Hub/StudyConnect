@@ -2,8 +2,12 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-md-4 text-center text-md-start mb-3 mb-md-0">
-                <span class="brand-icon me-1"><i class="bi bi-lightning-charge-fill"></i></span>
-                <span class="brand-text">Study<span class="brand-accent">Connect</span></span>
+                <a href="{{ url_for('main.home') }}" class="d-inline-flex align-items-center text-decoration-none">
+                    <img src="{{ url_for('static', filename='img/logo/logo-icon-transparent.png') }}" height="32" alt="StudyConnect">
+                    <span class="brand-text" style="font-size: 1.4rem;">
+                        <span class="brand-study">Study</span><span class="brand-connect">Connect</span>
+                    </span>
+                </a>
                 <p class="text-muted small mt-1 mb-0">Learn together. Grow together.</p>
             </div>
             <div class="col-md-4 text-center mb-3 mb-md-0">

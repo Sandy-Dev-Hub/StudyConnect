@@ -242,6 +242,50 @@ a:hover {
   max-width: 100% !important;
 }
 
+/* Official StudyConnect Wordmark & Navbar Branding */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.navbar-brand img {
+  display: block;
+}
+
+.brand-text {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  font-family: Inter, Manrope, Satoshi, sans-serif;
+  font-weight: 800;
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.brand-study {
+  color: #FFFFFF;
+}
+
+.brand-connect {
+  color: #EA8528;
+}
+
+@media (max-width: 768px) {
+  .brand-text {
+    font-size: 1.35rem;
+    margin-left: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .brand-text {
+    font-size: 1.15rem;
+    margin-left: 6px;
+  }
+}
+
 /* Three Section Navbar Layout - Strictly Single Row */
 .glass-nav .container-fluid,
 .glass-nav .navbar-collapse,
@@ -2981,4 +3025,21 @@ table {
   h2, .h2 {
     font-size: 1.5rem !important;
   }
+}
+
+/* StudyConnect Official Logo Pulse Loader */
+.logo-loader {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  animation: logoPulse 1.4s ease-in-out infinite;
+}
+.logo-loader-sm {
+  width: 24px;
+  height: 24px;
+}
+@keyframes logoPulse {
+  0% { transform: scale(0.92); opacity: 0.6; filter: drop-shadow(0 0 2px rgba(234, 133, 40, 0.3)); }
+  50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 10px rgba(234, 133, 40, 0.8)); }
+  100% { transform: scale(0.92); opacity: 0.6; filter: drop-shadow(0 0 2px rgba(234, 133, 40, 0.3)); }
 }

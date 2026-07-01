@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const headerTitle = document.getElementById('chat-header-title');
         const headerSub = document.getElementById('chat-header-subtitle');
         const messagesBox = document.getElementById('chat-messages');
-        messagesBox.innerHTML = '<div class="text-center my-auto"><div class="spinner-border text-warning" role="status"></div></div>';
+        messagesBox.innerHTML = '<div class="text-center my-auto"><img src="/static/img/logo/logo-icon-transparent.png" class="logo-loader" alt="StudyConnect"></div>';
 
         const endpoint = type === 'dm' ? `/messages/api/dm/${id}` : `/messages/api/group/${id}`;
         fetch(endpoint)

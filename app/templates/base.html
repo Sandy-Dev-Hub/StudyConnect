@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="StudyConnect — Ask doubts, share knowledge, earn points. A student Q&A platform.">
+    <meta name="description" content="StudyConnect — Learn Together. Grow Together. Gamified peer-learning community and collaborative study platform.">
+    
+    <!-- Favicon & App Branding -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/logo/favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/logo/apple-touch-icon.png') }}">
+    
+    <!-- Social Sharing & Open Graph -->
+    <meta property="og:title" content="StudyConnect — Learn Together. Grow Together.">
+    <meta property="og:description" content="A gamified peer-learning community, collaborative study rooms, and real-time networking platform.">
+    <meta property="og:image" content="{{ url_for('static', filename='img/logo/logo-uploaded.png', _external=True) }}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="StudyConnect — Learn Together. Grow Together.">
+    <meta name="twitter:description" content="Join StudyConnect to ask doubts, earn points, and discover peers studying nearby.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='img/logo/logo-uploaded.png', _external=True) }}">
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}StudyConnect{% endblock %}</title>
 

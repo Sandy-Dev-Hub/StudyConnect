@@ -1,4 +1,8 @@
-# ⚡ StudyConnect
+<div align="center">
+  <img src="docs/images/logo/logo-icon-transparent.png" alt="StudyConnect Official Logo" width="260">
+</div>
+
+<br>
 
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)
