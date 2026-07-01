@@ -4,6 +4,11 @@ from app.models.user import User
 
 def get_connection(user_id, other_id):
     """Find a connection record between two users regardless of who requested."""
+    try:
+        user_id = int(user_id)
+        other_id = int(other_id)
+    except (TypeError, ValueError):
+        return None
     return Connection.query.filter(
         db.or_(
             db.and_(Connection.requester_id == user_id, Connection.recipient_id == other_id),
@@ -28,6 +33,11 @@ def get_connection_status(user_id, other_id):
     return 'none'
 
 def send_request(requester_id, recipient_id):
+    try:
+        requester_id = int(requester_id)
+        recipient_id = int(recipient_id)
+    except (TypeError, ValueError):
+        return None, "Invalid user ID."
     if requester_id == recipient_id:
         return None, "You cannot connect with yourself."
     

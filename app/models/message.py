@@ -20,6 +20,11 @@ class Conversation(db.Model):
 
     @classmethod
     def get_or_create(cls, u1_id, u2_id):
+        try:
+            u1_id = int(u1_id)
+            u2_id = int(u2_id)
+        except (TypeError, ValueError):
+            return None
         if u1_id == u2_id:
             return None
         low_id, high_id = min(u1_id, u2_id), max(u1_id, u2_id)

@@ -83,13 +83,18 @@ def list_nearby():
 def send_study_request():
     """Send study request to a nearby student."""
     data = request.get_json() or {}
-    recipient_id = data.get('recipient_id')
+    raw_recipient_id = data.get('recipient_id')
+    if not raw_recipient_id:
+        return jsonify({'success': False, 'message': 'Recipient ID is required.'}), 400
+
+    try:
+        recipient_id = int(raw_recipient_id)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Invalid Recipient ID format.'}), 400
+
     subject = data.get('subject')
     exam = data.get('exam')
     note = data.get('note')
-
-    if not recipient_id:
-        return jsonify({'success': False, 'message': 'Recipient ID is required.'}), 400
 
     try:
         req = StudyRequestService.send_request(current_user.id, recipient_id, subject, exam, note)

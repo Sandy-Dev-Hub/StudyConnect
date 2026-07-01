@@ -149,7 +149,13 @@ class StudyRequestService:
     """Service handling study invitations, cooldown rules, and chat session creation."""
     @staticmethod
     def send_request(requester_id, recipient_id, subject_tag=None, exam_tag=None, note=None):
-        if int(requester_id) == int(recipient_id):
+        try:
+            requester_id = int(requester_id)
+            recipient_id = int(recipient_id)
+        except (TypeError, ValueError):
+            raise ValueError("Invalid requester or recipient ID.")
+
+        if requester_id == recipient_id:
             raise ValueError("Cannot send study request to yourself.")
 
         # Check existing pending request in either direction
@@ -211,8 +217,14 @@ class StudyRequestService:
 
     @staticmethod
     def respond_to_request(request_id, user_id, action):
+        try:
+            request_id = int(request_id)
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            raise ValueError("Invalid request or user ID.")
+
         req = StudyRequest.query.get_or_404(request_id)
-        if req.recipient_id != int(user_id):
+        if req.recipient_id != user_id:
             raise PermissionError("You are not authorized to respond to this request.")
 
         if req.is_expired():
