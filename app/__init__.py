@@ -97,6 +97,14 @@ def _init_extensions(app):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     mail.init_app(app)
+    _pwd = app.config.get('MAIL_PASSWORD')
+    _masked_pwd = '***' if _pwd else 'None'
+    app.logger.info(
+        f"[MAIL CONFIG] SERVER={app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')} | "
+        f"TLS={app.config.get('MAIL_USE_TLS')} | SSL={app.config.get('MAIL_USE_SSL')} | "
+        f"USER={app.config.get('MAIL_USERNAME')} | PASS={_masked_pwd} | "
+        f"SENDER={app.config.get('MAIL_DEFAULT_SENDER')} | SUPPRESS={app.config.get('MAIL_SUPPRESS_SEND')}"
+    )
     csrf.init_app(app)
     cache.init_app(app)
     socketio_kwargs = {

@@ -25,11 +25,30 @@ class Config:
     # Mail
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', '1') == '1'
+    _tls = os.environ.get('MAIL_USE_TLS')
+    MAIL_USE_TLS = _tls.lower().strip() in ('1', 'true', 'yes') if _tls is not None else (MAIL_PORT == 587)
+    _ssl = os.environ.get('MAIL_USE_SSL')
+    MAIL_USE_SSL = _ssl.lower().strip() in ('1', 'true', 'yes') if _ssl is not None else (MAIL_PORT == 465)
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'StudyConnect <noreply@studyconnect.com>')
-    MAIL_SUPPRESS_SEND = os.environ.get('MAIL_SUPPRESS_SEND', '1') == '1'
+    _default_sender = os.environ.get('MAIL_DEFAULT_SENDER')
+    if _default_sender:
+        MAIL_DEFAULT_SENDER = _default_sender
+    elif MAIL_USERNAME:
+        MAIL_DEFAULT_SENDER = f"StudyConnect <{MAIL_USERNAME}>"
+    else:
+        MAIL_DEFAULT_SENDER = 'StudyConnect <noreply@studyconnect.com>'
+
+    _suppress = os.environ.get('MAIL_SUPPRESS_SEND')
+    if _suppress is not None:
+        MAIL_SUPPRESS_SEND = _suppress.lower().strip() in ('1', 'true', 'yes')
+    else:
+        if MAIL_USERNAME and MAIL_PASSWORD:
+            MAIL_SUPPRESS_SEND = False
+        elif os.environ.get('FLASK_ENV') == 'production':
+            MAIL_SUPPRESS_SEND = False
+        else:
+            MAIL_SUPPRESS_SEND = True
     AUTO_VERIFY_USERS = os.environ.get('AUTO_VERIFY_USERS', '0') == '1'
 
     # Redis / Cache

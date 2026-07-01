@@ -10,9 +10,11 @@ def send_verification_email(user):
     token = user.generate_token(purpose='verify')
     verify_url = url_for('auth.verify_email', token=token, _external=True)
 
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
     msg = Message(
         subject='StudyConnect — Verify Your Email',
         recipients=[user.email],
+        sender=sender,
         html=render_template('auth/email_verify.html', user=user, verify_url=verify_url),
         body=f'Hi {user.username},\n\nPlease verify your email by visiting: {verify_url}\n\nThis link expires in 1 hour.\n\n— StudyConnect'
     )
@@ -33,10 +35,14 @@ def send_verification_email(user):
         print("=" * 60 + "\n", flush=True)
     else:
         try:
+            current_app.logger.info(
+                f'[EMAIL START] Sending verification email to {user.email} via '
+                f'{current_app.config.get("MAIL_SERVER")}:{current_app.config.get("MAIL_PORT")} (sender={msg.sender})'
+            )
             mail.send(msg)
-            current_app.logger.info(f'[EMAIL] Successfully sent verification email to {user.email}')
-        except Exception:
-            current_app.logger.exception(f'[EMAIL] Failed to send verification email to {user.email}')
+            current_app.logger.info(f'[EMAIL SUCCESS] Successfully sent verification email to {user.email}')
+        except Exception as e:
+            current_app.logger.exception(f'[EMAIL ERROR] Failed to send verification email to {user.email}: {e}')
             raise
 
 
@@ -45,9 +51,11 @@ def send_reset_email(user):
     token = user.generate_token(purpose='reset')
     reset_url = url_for('auth.reset_password', token=token, _external=True)
 
+    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
     msg = Message(
         subject='StudyConnect — Reset Your Password',
         recipients=[user.email],
+        sender=sender,
         html=render_template('auth/email_reset.html', user=user, reset_url=reset_url),
         body=f'Hi {user.username},\n\nReset your password by visiting: {reset_url}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\n— StudyConnect'
     )
@@ -68,8 +76,12 @@ def send_reset_email(user):
         print("=" * 60 + "\n", flush=True)
     else:
         try:
+            current_app.logger.info(
+                f'[EMAIL START] Sending password reset email to {user.email} via '
+                f'{current_app.config.get("MAIL_SERVER")}:{current_app.config.get("MAIL_PORT")} (sender={msg.sender})'
+            )
             mail.send(msg)
-            current_app.logger.info(f'[EMAIL] Successfully sent password reset email to {user.email}')
-        except Exception:
-            current_app.logger.exception(f'[EMAIL] Failed to send password reset email to {user.email}')
+            current_app.logger.info(f'[EMAIL SUCCESS] Successfully sent password reset email to {user.email}')
+        except Exception as e:
+            current_app.logger.exception(f'[EMAIL ERROR] Failed to send password reset email to {user.email}: {e}')
             raise
