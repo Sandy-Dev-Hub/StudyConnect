@@ -1,23 +1,62 @@
 import sys
+import requests
 from flask import current_app, url_for, render_template
-from flask_mail import Message
 
-from app.extensions import mail
+
+def _send_brevo_email(recipient_email, subject, html_body):
+    """Helper to send email via Brevo REST Email API."""
+    api_key = current_app.config.get('BREVO_API_KEY')
+    if not api_key:
+        current_app.logger.error('[BREVO EMAIL ERROR] BREVO_API_KEY environment variable is missing.')
+        return False
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "api-key": api_key,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    sender_conf = current_app.config.get('MAIL_DEFAULT_SENDER', 'StudyConnect <studyconnectcaptain@gmail.com>')
+    if '<' in sender_conf and '>' in sender_conf:
+        parts = sender_conf.split('<')
+        sender_name = parts[0].strip() or "StudyConnect"
+        sender_email = parts[1].split('>')[0].strip()
+    else:
+        sender_name = "StudyConnect"
+        sender_email = sender_conf.strip() or "studyconnectcaptain@gmail.com"
+
+    payload = {
+        "sender": {
+            "name": sender_name,
+            "email": sender_email
+        },
+        "to": [
+            {
+                "email": recipient_email
+            }
+        ],
+        "subject": subject,
+        "htmlContent": html_body
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        if response.status_code in (200, 201, 202):
+            current_app.logger.info(f'[BREVO EMAIL SUCCESS] Sent email "{subject}" to {recipient_email}. Status: {response.status_code}')
+            return True
+        else:
+            current_app.logger.error(f'[BREVO EMAIL ERROR] Brevo API status {response.status_code}: {response.text}')
+            return False
+    except Exception as e:
+        current_app.logger.exception(f'[BREVO EMAIL ERROR] Request exception while sending email "{subject}" to {recipient_email}: {e}')
+        return False
 
 
 def send_verification_email(user):
     """Send email verification link to user."""
     token = user.generate_token(purpose='verify')
     verify_url = url_for('auth.verify_email', token=token, _external=True)
-
-    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
-    msg = Message(
-        subject='StudyConnect — Verify Your Email',
-        recipients=[user.email],
-        sender=sender,
-        html=render_template('auth/email_verify.html', user=user, verify_url=verify_url),
-        body=f'Hi {user.username},\n\nPlease verify your email by visiting: {verify_url}\n\nThis link expires in 1 hour.\n\n— StudyConnect'
-    )
 
     if current_app.config.get('MAIL_SUPPRESS_SEND'):
         current_app.logger.info(f'[EMAIL] Verification link for {user.email}: {verify_url}')
@@ -33,32 +72,16 @@ def send_verification_email(user):
         print("Verification URL:\n")
         print(f"{verify_url}\n")
         print("=" * 60 + "\n", flush=True)
+        return True
     else:
-        try:
-            current_app.logger.info(
-                f'[EMAIL START] Sending verification email to {user.email} via '
-                f'{current_app.config.get("MAIL_SERVER")}:{current_app.config.get("MAIL_PORT")} (sender={msg.sender})'
-            )
-            mail.send(msg)
-            current_app.logger.info(f'[EMAIL SUCCESS] Successfully sent verification email to {user.email}')
-        except Exception as e:
-            current_app.logger.exception(f'[EMAIL ERROR] Failed to send verification email to {user.email}: {e}')
-            raise
+        html_body = render_template('auth/email_verify.html', user=user, verify_url=verify_url)
+        return _send_brevo_email(user.email, 'StudyConnect — Verify Your Email', html_body)
 
 
 def send_reset_email(user):
     """Send password reset link to user."""
     token = user.generate_token(purpose='reset')
     reset_url = url_for('auth.reset_password', token=token, _external=True)
-
-    sender = current_app.config.get('MAIL_DEFAULT_SENDER')
-    msg = Message(
-        subject='StudyConnect — Reset Your Password',
-        recipients=[user.email],
-        sender=sender,
-        html=render_template('auth/email_reset.html', user=user, reset_url=reset_url),
-        body=f'Hi {user.username},\n\nReset your password by visiting: {reset_url}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\n— StudyConnect'
-    )
 
     if current_app.config.get('MAIL_SUPPRESS_SEND'):
         current_app.logger.info(f'[EMAIL] Password reset link for {user.email}: {reset_url}')
@@ -74,14 +97,10 @@ def send_reset_email(user):
         print("Reset URL:\n")
         print(f"{reset_url}\n")
         print("=" * 60 + "\n", flush=True)
+        return True
     else:
-        try:
-            current_app.logger.info(
-                f'[EMAIL START] Sending password reset email to {user.email} via '
-                f'{current_app.config.get("MAIL_SERVER")}:{current_app.config.get("MAIL_PORT")} (sender={msg.sender})'
-            )
-            mail.send(msg)
-            current_app.logger.info(f'[EMAIL SUCCESS] Successfully sent password reset email to {user.email}')
-        except Exception as e:
-            current_app.logger.exception(f'[EMAIL ERROR] Failed to send password reset email to {user.email}: {e}')
-            raise
+        html_body = render_template('auth/email_reset.html', user=user, reset_url=reset_url)
+        return _send_brevo_email(user.email, 'StudyConnect — Reset Your Password', html_body)
+
+
+send_password_reset_email = send_reset_email

@@ -94,10 +94,16 @@ class TestEmailModes(unittest.TestCase):
     def test_mail_suppress_send_false(self):
         """Verify behavior when MAIL_SUPPRESS_SEND is False (Production Mode behavior even if DEBUG=True)."""
         self.app.config['MAIL_SUPPRESS_SEND'] = False
-        self.app.config['DEBUG'] = True  # Even in debug mode, MAIL_SUPPRESS_SEND=False must trigger real send
+        self.app.config['BREVO_API_KEY'] = 'test_brevo_key'
+        self.app.config['DEBUG'] = True
         client = self.app.test_client()
 
-        with patch.object(mail, 'send') as mock_send:
+        from unittest.mock import MagicMock
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.text = '{"messageId": "123"}'
+
+        with patch('app.auth.services.requests.post', return_value=mock_response) as mock_post:
             # 1. Registration
             captured_stdout = io.StringIO()
             old_stdout = sys.stdout
@@ -114,10 +120,10 @@ class TestEmailModes(unittest.TestCase):
 
             self.assertEqual(resp.status_code, 200)
             self.assertIn(b'Please check your email for the verification link.', resp.data)
-            self.assertEqual(mock_send.call_count, 1)
-            sent_msg = mock_send.call_args[0][0]
-            self.assertEqual(sent_msg.recipients, ['real@example.com'])
-            self.assertIn('Verify Your Email', sent_msg.subject)
+            self.assertEqual(mock_post.call_count, 1)
+            payload = mock_post.call_args[1]['json']
+            self.assertEqual(payload['to'][0]['email'], 'real@example.com')
+            self.assertIn('Verify Your Email', payload['subject'])
 
             output = captured_stdout.getvalue()
             self.assertNotIn('EMAIL VERIFICATION', output)
@@ -130,7 +136,7 @@ class TestEmailModes(unittest.TestCase):
             self.assertIn(b'Please check your email for the verification link.', resp.data)
 
             # 3. Forgot Password
-            mock_send.reset_mock()
+            mock_post.reset_mock()
             captured_stdout = io.StringIO()
             sys.stdout = captured_stdout
             try:
@@ -141,14 +147,14 @@ class TestEmailModes(unittest.TestCase):
                 sys.stdout = old_stdout
 
             self.assertIn(b'please check your email for the reset link.', resp.data)
-            self.assertEqual(mock_send.call_count, 1)
-            sent_msg = mock_send.call_args[0][0]
-            self.assertEqual(sent_msg.recipients, ['real@example.com'])
-            self.assertIn('Reset Your Password', sent_msg.subject)
+            self.assertEqual(mock_post.call_count, 1)
+            payload = mock_post.call_args[1]['json']
+            self.assertEqual(payload['to'][0]['email'], 'real@example.com')
+            self.assertIn('Reset Your Password', payload['subject'])
             self.assertNotIn('PASSWORD RESET', captured_stdout.getvalue())
 
             # 4. Resend verification
-            mock_send.reset_mock()
+            mock_post.reset_mock()
             user = User.query.filter_by(email='real@example.com').first()
             user.is_verified = True
             db.session.commit()
@@ -164,7 +170,7 @@ class TestEmailModes(unittest.TestCase):
                 sys.stdout = old_stdout
 
             self.assertIn(b'Please check your email for the verification link.', resp.data)
-            self.assertEqual(mock_send.call_count, 1)
+            self.assertEqual(mock_post.call_count, 1)
 
 
 if __name__ == '__main__':

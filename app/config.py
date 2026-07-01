@@ -22,7 +22,8 @@ class Config:
         _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
     SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///studyconnect.db'
 
-    # Mail
+    # Mail / Brevo API
+    BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
     _tls = os.environ.get('MAIL_USE_TLS')
@@ -37,13 +38,13 @@ class Config:
     elif MAIL_USERNAME:
         MAIL_DEFAULT_SENDER = f"StudyConnect <{MAIL_USERNAME}>"
     else:
-        MAIL_DEFAULT_SENDER = 'StudyConnect <noreply@studyconnect.com>'
+        MAIL_DEFAULT_SENDER = 'StudyConnect <studyconnectcaptain@gmail.com>'
 
     _suppress = os.environ.get('MAIL_SUPPRESS_SEND')
     if _suppress is not None:
         MAIL_SUPPRESS_SEND = _suppress.lower().strip() in ('1', 'true', 'yes')
     else:
-        if MAIL_USERNAME and MAIL_PASSWORD:
+        if BREVO_API_KEY or (MAIL_USERNAME and MAIL_PASSWORD):
             MAIL_SUPPRESS_SEND = False
         elif os.environ.get('FLASK_ENV') == 'production':
             MAIL_SUPPRESS_SEND = False

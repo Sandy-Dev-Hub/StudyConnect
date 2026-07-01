@@ -97,13 +97,13 @@ def _init_extensions(app):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     mail.init_app(app)
+    _brevo_key = app.config.get('BREVO_API_KEY')
+    _masked_brevo = '***' if _brevo_key else 'None'
     _pwd = app.config.get('MAIL_PASSWORD')
     _masked_pwd = '***' if _pwd else 'None'
     app.logger.info(
-        f"[MAIL CONFIG] SERVER={app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')} | "
-        f"TLS={app.config.get('MAIL_USE_TLS')} | SSL={app.config.get('MAIL_USE_SSL')} | "
-        f"USER={app.config.get('MAIL_USERNAME')} | PASS={_masked_pwd} | "
-        f"SENDER={app.config.get('MAIL_DEFAULT_SENDER')} | SUPPRESS={app.config.get('MAIL_SUPPRESS_SEND')}"
+        f"[EMAIL CONFIG] BREVO_API_KEY={_masked_brevo} | SENDER={app.config.get('MAIL_DEFAULT_SENDER')} | "
+        f"SUPPRESS={app.config.get('MAIL_SUPPRESS_SEND')} | SMTP_SERVER={app.config.get('MAIL_SERVER')}:{app.config.get('MAIL_PORT')}"
     )
     csrf.init_app(app)
     cache.init_app(app)
