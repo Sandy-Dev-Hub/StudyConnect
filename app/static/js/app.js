@@ -231,7 +231,7 @@ function initLiveSearch() {
 
         dropdown.innerHTML = `
             <div class="p-3 text-center text-muted small d-flex align-items-center justify-content-center">
-                <img src="/static/img/logo/logo-icon-transparent.png" class="logo-loader logo-loader-sm me-2" alt="StudyConnect">
+                <img src="/static/img/logo/logo-icon.svg" class="logo-loader logo-loader-sm me-2" alt="StudyConnect">
                 Searching...
             </div>
         `;
@@ -957,7 +957,7 @@ function updateUnreadBadge(delta, isRelative = false) {
 function loadNavbarNotifications() {
     const listEl = document.getElementById('navbar-notif-list');
     if (!listEl) return;
-    listEl.innerHTML = '<div class="text-center p-4 text-muted small"><img src="/static/img/logo/logo-icon-transparent.png" class="logo-loader mb-2" alt="StudyConnect"><div>Loading notifications...</div></div>';
+    listEl.innerHTML = '<div class="text-center p-4 text-muted small"><img src="/static/img/logo/logo-icon.svg" class="logo-loader mb-2" alt="StudyConnect"><div>Loading notifications...</div></div>';
 
     fetch('/notifications/api/list?limit=10')
         .then(r => r.json())
