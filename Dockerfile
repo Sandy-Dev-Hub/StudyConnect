@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build Wheels & Dependencies
 # ==========================================
-FROM python:3.11-slim as builder
+FROM python:3.12.9-slim as builder
 
 WORKDIR /app
 
@@ -14,13 +14,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
 
 
 # ==========================================
 # Stage 2: Production Runtime
 # ==========================================
-FROM python:3.11-slim
+FROM python:3.12.9-slim
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN groupadd -r studyconnect && useradd -r -g studyconnect studyconnect
 # Install pre-compiled Python packages from builder stage
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
-RUN pip install --no-cache /wheels/*
+RUN pip install --no-cache --find-links=/wheels /wheels/*
 
 # Copy application source code
 COPY --chown=studyconnect:studyconnect . .
