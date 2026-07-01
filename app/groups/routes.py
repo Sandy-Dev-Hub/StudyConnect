@@ -21,7 +21,7 @@ def index():
     exam = request.args.get('exam', '', type=str)
     filter_type = request.args.get('filter', 'active', type=str)
 
-    query = StudyGroup.query.options(joinedload(StudyGroup.members))
+    query = StudyGroup.query
 
     if q:
         query = query.filter(StudyGroup.name.ilike(f'%{q}%') | StudyGroup.description.ilike(f'%{q}%'))

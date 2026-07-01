@@ -29,7 +29,10 @@ def register():
             db.session.add(user)
             db.session.commit()
             send_verification_email(user)
-            flash('Account created! Check your email (or console) for a verification link.', 'success')
+            if current_app.config.get('MAIL_SUPPRESS_SEND'):
+                flash('Account created! Check the console for the verification link.', 'success')
+            else:
+                flash('Account created! Please check your email for the verification link.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html', form=form)
@@ -49,7 +52,10 @@ def login():
             return render_template('auth/login.html', form=form)
 
         if not user.is_verified:
-            flash('Please verify your email before logging in. Check your inbox or console.', 'warning')
+            if current_app.config.get('MAIL_SUPPRESS_SEND'):
+                flash('Please verify your email before logging in. Check the console for the verification link.', 'warning')
+            else:
+                flash('Please verify your email before logging in. Please check your email for the verification link.', 'warning')
             return render_template('auth/login.html', form=form)
 
         login_user(user, remember=form.remember_me.data)
@@ -103,7 +109,10 @@ def forgot_password():
         if user:
             send_reset_email(user)
         # Always show success to prevent email enumeration
-        flash('If an account exists with that email, a reset link has been sent.', 'info')
+        if current_app.config.get('MAIL_SUPPRESS_SEND'):
+            flash('If an account exists with that email, check the console for the reset link.', 'info')
+        else:
+            flash('If an account exists with that email, please check your email for the reset link.', 'info')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/forgot_password.html', form=form)
@@ -136,5 +145,8 @@ def resend_verification():
         flash('Your email is already verified.', 'info')
     else:
         send_verification_email(current_user)
-        flash('Verification email resent. Check your inbox or console.', 'info')
+        if current_app.config.get('MAIL_SUPPRESS_SEND'):
+            flash('Verification email resent. Check the console for the verification link.', 'info')
+        else:
+            flash('Verification email resent. Please check your email for the verification link.', 'info')
     return redirect(url_for('main.home'))

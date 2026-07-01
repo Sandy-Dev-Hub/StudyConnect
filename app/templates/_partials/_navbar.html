@@ -130,25 +130,26 @@
             <div class="navbar-right d-flex align-items-center flex-shrink-0 ms-auto my-2 my-lg-0 gap-2">
                 {% if current_user.is_authenticated %}
                     <div class="nav-item dropdown notifications-dropdown">
-                        <a class="nav-link text-muted p-2 dropdown-toggle d-flex align-items-center" href="#" id="notificationsDropdown" role="button"
+                        <a class="nav-link text-muted p-0 dropdown-toggle d-flex align-items-center justify-content-center notif-bell-toggle" href="#" id="notificationsDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false" title="Notifications" aria-label="Notifications">
-                            <i class="bi bi-bell position-relative fs-6">
+                            <i class="bi bi-bell position-relative fs-6 d-flex align-items-center justify-content-center">
                                 <span id="navbar-notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark {% if not unread_notifications_count or unread_notifications_count == 0 %}d-none{% endif %}" style="font-size: 0.65rem;">
                                     {{ unread_notifications_count or 0 }}
                                 </span>
                             </i>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end glass-dropdown notif-dropdown-menu p-2" aria-labelledby="notificationsDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;">
-                            <li class="d-flex align-items-center justify-content-between px-2 py-1 border-bottom border-secondary mb-1">
-                                <span class="fw-bold fs-6">Notifications</span>
-                                <a href="javascript:void(0)" id="mark-all-notif-read" class="small text-accent text-decoration-none">Mark all read</a>
+                        <ul class="dropdown-menu dropdown-menu-end glass-dropdown notif-dropdown-menu p-0" aria-labelledby="notificationsDropdown">
+                            <li class="notif-dropdown-header p-3 border-bottom border-secondary border-opacity-25 d-flex align-items-center justify-content-between">
+                                <span class="fw-bold fs-6 text-1">Notifications</span>
+                                <a href="javascript:void(0)" id="mark-all-notif-read" class="small text-accent text-decoration-none fw-medium">Mark all read</a>
                             </li>
-                            <div id="navbar-notif-list">
-                                <li class="text-center p-3 text-muted small">Loading notifications...</li>
-                            </div>
-                            <li><hr class="dropdown-divider my-1"></li>
-                            <li class="text-center">
-                                <a class="dropdown-item small text-accent py-1" href="{{ url_for('notifications.index') }}">View All Notifications</a>
+                            <li>
+                                <div id="navbar-notif-list" class="notif-list-scroll custom-scrollbar">
+                                    <div class="text-center p-4 text-muted small">Loading notifications...</div>
+                                </div>
+                            </li>
+                            <li class="notif-dropdown-footer p-2 border-top border-secondary border-opacity-25">
+                                <a class="dropdown-item text-center small text-accent fw-medium py-2 rounded-3 d-block" href="{{ url_for('notifications.index') }}">View All Notifications</a>
                             </li>
                         </ul>
                     </div>
@@ -173,11 +174,11 @@
                     {% endif %}
 
                     <!-- User Dropdown -->
-                    <div class="nav-item dropdown ms-1">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#"
-                           role="button" data-bs-toggle="dropdown">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center justify-content-center p-0 user-avatar-toggle" href="#"
+                           role="button" data-bs-toggle="dropdown" aria-label="User account menu">
                             {% if current_user.profile and current_user.profile.avatar_filename %}
-                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 36px; height: 36px; object-fit: cover;">
+                                <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning nav-avatar-img">
                             {% else %}
                                 <div class="nav-avatar" style="background-color: {{ current_user.avatar_color }}">
                                     {{ current_user.initials }}

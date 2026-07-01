@@ -957,7 +957,7 @@ function updateUnreadBadge(delta, isRelative = false) {
 function loadNavbarNotifications() {
     const listEl = document.getElementById('navbar-notif-list');
     if (!listEl) return;
-    listEl.innerHTML = '<li class="text-center p-3 text-muted small">Loading notifications...</li>';
+    listEl.innerHTML = '<div class="text-center p-4 text-muted small"><div class="spinner-border spinner-border-sm text-accent mb-2" role="status"></div><div>Loading notifications...</div></div>';
 
     fetch('/notifications/api/list?limit=10')
         .then(r => r.json())
@@ -965,32 +965,48 @@ function loadNavbarNotifications() {
             if (data.status === 'success') {
                 updateUnreadBadge(data.unread_count);
                 if (!data.notifications.length) {
-                    listEl.innerHTML = '<li class="text-center p-3 text-muted small">No notifications</li>';
+                    listEl.innerHTML = `
+                        <div class="notif-empty-state text-center p-4 my-2">
+                            <div class="notif-empty-icon mb-2 d-inline-flex align-items-center justify-content-center rounded-circle">
+                                <i class="bi bi-bell-slash fs-4 text-muted"></i>
+                            </div>
+                            <div class="fw-bold text-1 mb-1">You're all caught up!</div>
+                            <div class="small text-muted">No new notifications.</div>
+                        </div>
+                    `;
                     return;
                 }
                 listEl.innerHTML = data.notifications.map(n => {
                     const iconEmoji = getNotifIcon(n.notification_type);
-                    const bgClass = n.is_read ? '' : 'bg-secondary bg-opacity-25';
+                    const unreadClass = !n.is_read ? 'notif-item--unread' : '';
+                    const unreadDot = !n.is_read ? `<span class="notif-unread-dot" title="Unread"></span>` : '';
+                    const clickAction = n.link_url ? `onclick="window.location.href='${n.link_url}'" style="cursor:pointer;"` : '';
                     return `
-                        <li class="dropdown-item p-2 border-bottom border-secondary d-flex align-items-start gap-2 ${bgClass}" style="white-space: normal;">
-                            <span class="fs-5 flex-shrink-0">${iconEmoji}</span>
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong class="small text-truncate d-block" style="max-width: 180px;">${escapeHtml(n.title)}</strong>
-                                    <span class="text-muted" style="font-size: 0.65rem;">${n.time_ago || ''}</span>
-                                </div>
-                                <div class="small text-muted text-truncate" style="max-width: 210px;">${escapeHtml(n.message)}</div>
-                                ${n.link_url ? `<a href="${n.link_url}" class="small text-accent text-decoration-none">View <i class="bi bi-arrow-right"></i></a>` : ''}
+                        <div class="dropdown-item notif-item d-flex align-items-start p-3 border-bottom border-secondary border-opacity-10 ${unreadClass}" data-notif-id="${n.id}">
+                            <div class="notif-item-icon me-3 d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                                <span class="fs-5">${iconEmoji}</span>
                             </div>
-                            ${!n.is_read ? `<button class="btn btn-sm btn-link text-muted p-0 mark-read-btn flex-shrink-0" data-id="${n.id}" title="Mark read"><i class="bi bi-circle-fill text-accent" style="font-size: 6px;"></i></button>` : ''}
-                        </li>
+                            <div class="notif-item-content flex-grow-1 min-w-0" ${clickAction}>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-bold notif-item-title text-truncate me-2">${escapeHtml(n.title)}</span>
+                                    <span class="notif-item-time text-muted flex-shrink-0 small" style="font-size: 0.7rem;">${n.time_ago || ''}</span>
+                                </div>
+                                <div class="notif-item-desc text-muted small">${escapeHtml(n.message)}</div>
+                            </div>
+                            ${!n.is_read ? `
+                            <div class="ms-2 flex-shrink-0 d-flex align-items-center">
+                                <button class="btn btn-sm p-1 mark-read-btn border-0 bg-transparent d-flex align-items-center justify-content-center" data-id="${n.id}" title="Mark as read" aria-label="Mark as read">
+                                    ${unreadDot}
+                                </button>
+                            </div>` : ''}
+                        </div>
                     `;
                 }).join('');
             }
         })
         .catch(err => {
             console.error(err);
-            listEl.innerHTML = '<li class="text-center p-3 text-danger small">Failed to load</li>';
+            listEl.innerHTML = '<div class="text-center p-4 text-danger small">Failed to load notifications</div>';
         });
 }
 
@@ -1024,7 +1040,7 @@ function markNotificationRead(id) {
         if (data.status === 'success') {
             updateUnreadBadge(data.unread_count);
             const el = document.querySelector(`[data-notif-id="${id}"]`);
-            if (el) el.classList.remove('notif-unread-bg');
+            if (el) el.classList.remove('notif-unread-bg', 'notif-item--unread');
             loadNavbarNotifications();
         }
     });

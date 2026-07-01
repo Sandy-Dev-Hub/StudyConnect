@@ -17,7 +17,7 @@ def send_verification_email(user):
         body=f'Hi {user.username},\n\nPlease verify your email by visiting: {verify_url}\n\nThis link expires in 1 hour.\n\n— StudyConnect'
     )
 
-    if current_app.config.get('MAIL_SUPPRESS_SEND') or current_app.config.get('DEBUG'):
+    if current_app.config.get('MAIL_SUPPRESS_SEND'):
         current_app.logger.info(f'[EMAIL] Verification link for {user.email}: {verify_url}')
         if hasattr(sys.stdout, 'reconfigure'):
             try:
@@ -32,7 +32,12 @@ def send_verification_email(user):
         print(f"{verify_url}\n")
         print("=" * 60 + "\n", flush=True)
     else:
-        mail.send(msg)
+        try:
+            mail.send(msg)
+            current_app.logger.info(f'[EMAIL] Successfully sent verification email to {user.email}')
+        except Exception:
+            current_app.logger.exception(f'[EMAIL] Failed to send verification email to {user.email}')
+            raise
 
 
 def send_reset_email(user):
@@ -47,7 +52,7 @@ def send_reset_email(user):
         body=f'Hi {user.username},\n\nReset your password by visiting: {reset_url}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.\n\n— StudyConnect'
     )
 
-    if current_app.config.get('MAIL_SUPPRESS_SEND') or current_app.config.get('DEBUG'):
+    if current_app.config.get('MAIL_SUPPRESS_SEND'):
         current_app.logger.info(f'[EMAIL] Password reset link for {user.email}: {reset_url}')
         if hasattr(sys.stdout, 'reconfigure'):
             try:
@@ -62,4 +67,9 @@ def send_reset_email(user):
         print(f"{reset_url}\n")
         print("=" * 60 + "\n", flush=True)
     else:
-        mail.send(msg)
+        try:
+            mail.send(msg)
+            current_app.logger.info(f'[EMAIL] Successfully sent password reset email to {user.email}')
+        except Exception:
+            current_app.logger.exception(f'[EMAIL] Failed to send password reset email to {user.email}')
+            raise

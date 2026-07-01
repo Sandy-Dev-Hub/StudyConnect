@@ -175,41 +175,50 @@ Phase 5 elevates StudyConnect into a high-performance, enterprise-grade applicat
 
 ---
 
-## 📸 Screenshots & Placeholders
+## 📸 Application Screenshots
 
-### Productivity Dashboard
-```
-[ Screenshot Placeholder: Productivity Dashboard Overview ]
-```
+### Home & Community Overview
+![Home Overview](docs/images/home.png)
 
-### Pomodoro Timer
-```
-[ Screenshot Placeholder: Personal Focus Pomodoro Timer ]
-```
+### Authentication & Registration
+| Login | Register |
+|:---:|:---:|
+| ![Login](docs/images/login.png) | ![Register](docs/images/register.png) |
 
-### Group Focus Room
-```
-[ Screenshot Placeholder: Synchronized Group Focus Room ]
-```
+### Questions Feed & Detail View
+![Questions Feed](docs/images/questions-feed.png)
+![Question Detail](docs/images/question-detail.png)
+![Ask Question](docs/images/ask-question.png)
 
-### Study Goals
-```
-[ Screenshot Placeholder: Daily & Weekly Study Goals ]
-```
+### Study Groups & Collaborative Rooms
+![Study Groups](docs/images/groups.png)
+![Group Detail](docs/images/group-detail.png)
 
-### Analytics Dashboard
-```
-[ Screenshot Placeholder: Chart.js Analytics & Subject Breakdown ]
-```
+### Real-Time Peer Messaging & Nearby Study Discovery
+![Messaging](docs/images/messaging.png)
+![Nearby Peer Discovery](docs/images/nearby.png)
 
-### Heatmap
-```
-[ Screenshot Placeholder: GitHub-Style Contribution Heatmap ]
-```
+### Productivity Dashboard & Personal Pomodoro Focus
+![Productivity Dashboard](docs/images/productivity-dashboard.png)
+![Pomodoro Focus Timer](docs/images/pomodoro.png)
+
+### Study Analytics & GitHub-Style Heatmap
+![Analytics Dashboard](docs/images/analytics-dashboard.png)
+![Study Heatmap](docs/images/heatmap.png)
+
+### Leaderboard, Notifications & Search Autocomplete
+![Leaderboard](docs/images/leaderboard.png)
+![Notifications Hub](docs/images/notifications.png)
+![Search Autocomplete](docs/images/search-autocomplete.png)
+
+### Student Profile & Mobile Responsive Viewport
+| Student Profile | Mobile Viewport (375px) |
+|:---:|:---:|
+| ![Profile](docs/images/profile.png) | ![Mobile View](docs/images/mobile-view.png) |
 
 ---
 
-## 📊 Current Project Progress
+## 📊 Project Roadmap & Release Status
 
 | Phase | Status | Milestone Description |
 | :--- | :---: | :--- |
@@ -217,7 +226,7 @@ Phase 5 elevates StudyConnect into a high-performance, enterprise-grade applicat
 | **Phase 2** | ✅ Completed | Community, Student Profiles, Study Groups, Connections & Real-Time DM |
 | **Phase 3** | ✅ Completed | Nearby Study Discovery, Interactive Map, Storage Abstraction & Requests |
 | **Phase 4** | ✅ Completed | Productivity (Pomodoro Timer, Group Sessions & Study Goals) |
-| **Phase 5** | 🚧 In Progress | Enterprise FTS Search Engine (Completed), Notifications, Performance & Deployment |
+| **Phase 5** | ✅ Completed | Enterprise FTS Search Engine, Notifications, Performance, Accessibility & Cloud Deployment (v1.0.0 Released) |
 
 ---
 
