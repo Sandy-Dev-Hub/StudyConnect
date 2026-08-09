@@ -272,15 +272,19 @@
         let map = null;
         let myMarker = null;
         let peerMarkers = {};
-        let myLat = null;
-        let myLng = null;
-        let isSharing = false;
+        let myLat = {{ shared_lat if shared_lat else 'null' }};
+        let myLng = {{ shared_lng if shared_lng else 'null' }};
+        let isSharing = {{ 'true' if is_sharing else 'false' }};
+        let expiresAt = {% if expires_at %}'{{ expires_at }}'{% else %}null{% endif %};
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
         // Initialize Leaflet Map
         function initMap() {
-            map = L.map('nearbyMap', { zoomControl: false }).setView([37.7749, -122.4194], 13);
+            map = L.map('nearbyMap', { zoomControl: false }).setView(
+                isSharing && myLat !== null && myLng !== null ? [myLat, myLng] : [37.7749, -122.4194], 
+                13
+            );
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             // CartoDB Dark Matter Tiles
@@ -289,6 +293,29 @@
                 subdomains: 'abcd',
                 maxZoom: 19
             }).addTo(map);
+
+            if (isSharing && myLat !== null && myLng !== null) {
+                let myIconHtml;
+                {% if current_user.profile and current_user.profile.avatar_filename %}
+                    myIconHtml = `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
+                {% else %}
+                    myIconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
+                {% endif %}
+                const myIcon = L.divIcon({
+                    className: '',
+                    html: myIconHtml,
+                    iconSize: [44, 44],
+                    iconAnchor: [22, 22]
+                });
+                myMarker = L.marker([myLat, myLng], { icon: myIcon }).addTo(map);
+                myMarker.bindPopup("<b>You</b><br>Approximate broadcast location.");
+                
+                // updateSharingUI is defined below, so we'll call it after its definition, or just rely on it hoisting (function declaration is hoisted).
+                setTimeout(() => {
+                    updateSharingUI(true, expiresAt);
+                    fetchNearbyStudents();
+                }, 100);
+            }
         }
         initMap();
 
@@ -406,9 +433,15 @@
 
                         // Add My Marker
                         if (myMarker) map.removeLayer(myMarker);
+                        let myIconHtml;
+                        {% if current_user.profile and current_user.profile.avatar_filename %}
+                            myIconHtml = `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
+                        {% else %}
+                            myIconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
+                        {% endif %}
                         const myIcon = L.divIcon({
                             className: '',
-                            html: `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='images/default_avatar.png') }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`,
+                            html: myIconHtml,
                             iconSize: [44, 44],
                             iconAnchor: [22, 22]
                         });
@@ -428,7 +461,7 @@
         }, (err) => {
             loader.classList.add('d-none');
             showToast('Unable to retrieve location. Please allow location permissions.', 'warning');
-        }, { enableHighAccuracy: true, timeout: 10000 });
+        }, { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 });
     });
 
     // Stop Sharing Button
@@ -484,13 +517,26 @@
         let html = '';
         students.forEach(s => {
             // Marker
-            const iconHtml = `<div class="custom-avatar-marker" style="background-image: url('${s.avatar_url}');"><div class="marker-pulse"></div></div>`;
+            let iconHtml;
+            if (s.avatar_url) {
+                iconHtml = `<div class="custom-avatar-marker" style="background-image: url('${s.avatar_url}');"><div class="marker-pulse"></div></div>`;
+            } else {
+                iconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`;
+            }
             const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [44, 44], iconAnchor: [22, 22] });
-            const marker = L.marker([s.lat, s.lng], { icon }).addTo(map);
+            
+            // Add a tiny visual offset so markers don't perfectly overlap if they have identical coordinates
+            const offsetLat = s.lat + (Math.random() - 0.5) * 0.0003;
+            const offsetLng = s.lng + (Math.random() - 0.5) * 0.0003;
+            const marker = L.marker([offsetLat, offsetLng], { icon }).addTo(map);
+
+            let popupAvatar = s.avatar_url
+                ? `<img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;">`
+                : `<div class="nav-avatar mx-auto mb-2" style="background-color: ${s.avatar_color}; width: 48px; height: 48px; font-size: 1.2rem;">${s.initials}</div>`;
 
             const popupHtml = `
                 <div class="p-1 text-center">
-                    <img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;">
+                    ${popupAvatar}
                     <h6 class="mb-1 fw-bold">${s.username}</h6>
                     <span class="badge bg-warning text-dark mb-2">${s.subject} • ${s.exam}</span>
                     <p class="small text-muted mb-2">${s.distance_km} km away | 🔥 ${s.streak}d streak</p>
@@ -500,10 +546,14 @@
             peerMarkers[s.user_id] = marker;
 
             // List Card
+            let listAvatar = s.avatar_url
+                ? `<img src="${s.avatar_url}" class="rounded-circle border border-warning" width="50" height="50" style="object-fit: cover; flex-shrink: 0;">`
+                : `<div class="nav-avatar border border-warning flex-shrink-0 d-flex align-items-center justify-content-center fw-bold" style="background-color: ${s.avatar_color}; width: 50px; height: 50px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
+
             html += `
                 <div class="student-card d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center gap-3 overflow-hidden">
-                        <img src="${s.avatar_url}" class="rounded-circle border border-warning" width="50" height="50" style="object-fit: cover; flex-shrink: 0;">
+                        ${listAvatar}
                         <div class="overflow-hidden">
                             <h6 class="mb-1 text-truncate fw-semibold">${s.username}</h6>
                             <div class="d-flex gap-1 mb-1 flex-wrap">

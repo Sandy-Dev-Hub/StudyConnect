@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.nearby import nearby_bp
 from app.nearby.decorators import rate_limit
 from app.nearby.services import LocationService, StudyRequestService, AnalyticsHooks
+from app.nearby.storage import get_storage
 from app.models import StudyRequest
 
 
@@ -10,7 +11,13 @@ from app.models import StudyRequest
 @login_required
 def index():
     """Render main Nearby Study Discovery UI page."""
-    return render_template('nearby/index.html')
+    user_data = get_storage().get(current_user.id)
+    is_sharing = True if user_data else False
+    shared_lat = user_data.get('lat') if user_data else None
+    shared_lng = user_data.get('lng') if user_data else None
+    expires_at = user_data.get('expires_at') if user_data else None
+
+    return render_template('nearby/index.html', is_sharing=is_sharing, shared_lat=shared_lat, shared_lng=shared_lng, expires_at=expires_at)
 
 
 @nearby_bp.route('/api/share', methods=['POST'])

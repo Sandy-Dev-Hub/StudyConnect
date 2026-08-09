@@ -31,11 +31,7 @@ def handle_disconnect():
             if online_users[uid] <= 0:
                 del online_users[uid]
                 emit('user_status_change', {'user_id': uid, 'status': 'offline'}, broadcast=True)
-                try:
-                    from app.nearby.services import LocationService
-                    LocationService.stop_sharing(uid)
-                except Exception:
-                    pass
+
 
 @socketio.on('get_online_users')
 def handle_get_online():
@@ -103,8 +99,11 @@ def handle_send_message(data):
     chat_type = data.get('type')
     target_id = data.get('target_id')
     body = data.get('body', '').strip()
+    msg_type = data.get('message_type', 'text')
+    lat = data.get('location_lat')
+    lng = data.get('location_lng')
 
-    if not body:
+    if msg_type == 'text' and not body:
         return
 
     if chat_type == 'dm':
@@ -112,19 +111,19 @@ def handle_send_message(data):
         if not recipient or recipient.id == current_user.id:
             return
         
-        msg = create_dm_message(current_user.id, recipient.id, body)
+        msg = create_dm_message(current_user.id, recipient.id, body=body, message_type=msg_type, location_lat=lat, location_lng=lng)
         if msg:
             conv = Conversation.get_or_create(current_user.id, recipient.id)
             room = f"dm_{conv.id}"
             msg_dict = msg.to_dict()
             emit('new_message', msg_dict, room=room)
             
-            # Send notification to recipient's personal room if they are not active in the DM room
             notification_payload = {
                 'type': 'dm',
                 'sender_id': current_user.id,
                 'sender_username': current_user.username,
-                'body': body[:50] + ('...' if len(body) > 50 else '')
+                'body': 'Sent an attachment' if msg_type != 'text' else (body[:50] + ('...' if len(body) > 50 else '')),
+                'message': msg_dict
             }
             emit('chat_notification', notification_payload, room=f"user_{recipient.id}")
 
@@ -133,8 +132,26 @@ def handle_send_message(data):
         if not group or not group.members.filter_by(user_id=current_user.id).first():
             return
         
-        msg = create_group_message(current_user.id, group.id, body)
+        msg = create_group_message(current_user.id, group.id, body=body, message_type=msg_type, location_lat=lat, location_lng=lng)
         if msg:
             room = f"group_{group.id}"
             msg_dict = msg.to_dict()
             emit('new_message', msg_dict, room=room)
+
+@socketio.on('message_read')
+def handle_message_read(data):
+    if not current_user.is_authenticated:
+        return
+    
+    chat_type = data.get('type')
+    target_id = data.get('target_id')
+    
+    if chat_type == 'dm':
+        conv = Conversation.get_or_create(current_user.id, target_id)
+        if conv:
+            from app.messages.services import mark_conversation_read
+            mark_conversation_read(conv.id, current_user.id)
+            emit('messages_marked_read', {
+                'conversation_id': conv.id,
+                'read_by': current_user.id
+            }, room=f"dm_{conv.id}")

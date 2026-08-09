@@ -9,6 +9,8 @@ class UserProfile(db.Model):
     avatar_filename = db.Column(db.String(255), nullable=True)
     banner_filename = db.Column(db.String(255), nullable=True)
     bio = db.Column(db.Text, default='')
+    display_name = db.Column(db.String(80), unique=True, index=True, nullable=True)
+    onboarding_completed = db.Column(db.Boolean, default=False, nullable=False)
     subject_tag = db.Column(db.String(50), nullable=True, index=True)
     exam_tag = db.Column(db.String(50), nullable=True, index=True)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),

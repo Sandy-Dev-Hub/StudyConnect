@@ -159,19 +159,6 @@
                         <i class="bi bi-plus-circle me-1"></i> Ask
                     </a>
 
-                    <!-- Points Badge -->
-                    <span class="nav-points-badge text-nowrap" id="nav-points" title="Your Points">
-                        <i class="bi bi-star-fill"></i>
-                        <span id="nav-points-value">{{ user_points }}</span>
-                    </span>
-
-                    <!-- Streak Badge -->
-                    {% if user_streak > 0 %}
-                    <span class="nav-streak-badge text-nowrap" title="{{ user_streak }} day streak">
-                        <i class="bi bi-fire streak-flame"></i>
-                        <span>{{ user_streak }}</span>
-                    </span>
-                    {% endif %}
 
                     <!-- User Dropdown -->
                     <div class="nav-item dropdown">
@@ -187,7 +174,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end glass-dropdown">
                             <li class="dropdown-header">
-                                <strong>{{ current_user.username }}</strong>
+                                <strong>{{ current_user.display_name }}</strong>
                                 <br><small class="text-muted">{{ current_user.email }}</small>
                             </li>
                             <li><hr class="dropdown-divider"></li>

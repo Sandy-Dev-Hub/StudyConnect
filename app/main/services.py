@@ -52,7 +52,7 @@ def get_or_create_profile(user):
         return profile
     return user.profile
 
-def update_user_profile(user, bio, subject_tag, exam_tag, avatar_file=None, banner_file=None):
+def update_user_profile(user, bio, subject_tag, exam_tag, display_name=None, avatar_file=None, banner_file=None):
     profile = get_or_create_profile(user)
 
     if avatar_file and avatar_file.filename:
@@ -70,6 +70,9 @@ def update_user_profile(user, bio, subject_tag, exam_tag, avatar_file=None, bann
             profile.banner_filename = new_banner
             if old_banner:
                 delete_profile_image(old_banner, 'banners')
+
+    if display_name is not None:
+        profile.display_name = display_name
 
     profile.bio = bio.strip() if bio else ''
     profile.subject_tag = subject_tag if subject_tag else None

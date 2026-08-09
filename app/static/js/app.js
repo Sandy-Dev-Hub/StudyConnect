@@ -953,6 +953,35 @@ function initNotifications() {
                 loadNavbarNotifications();
             }
         });
+
+        socket.off('chat_notification');
+        socket.on('chat_notification', (data) => {
+            // Check if we are on the messages page and currently chatting with this user
+            if (window.location.pathname.startsWith('/messages')) {
+                if (typeof window.currentChatType !== 'undefined' && 
+                    window.currentChatType === 'dm' && 
+                    window.currentTargetId === data.sender_id) {
+                    return; // Don't show toast if we are currently chatting with them
+                }
+            }
+
+            // Update chat badge in navbar
+            const badge = document.getElementById('navbar-unread-badge');
+            if (badge) {
+                let count = parseInt(badge.textContent) || 0;
+                badge.textContent = count + 1;
+                badge.classList.remove('d-none');
+            }
+
+            // Show a generic toast using the same format as regular notifications
+            const chatNotif = {
+                notification_type: 'answer', // maps to chat bubble icon
+                title: data.sender_username,
+                message: data.body || 'Sent a message',
+                link_url: `/messages?open_dm=${data.message.conversation_id}`
+            };
+            showNotificationToast(chatNotif);
+        });
     }
 }
 
@@ -1079,6 +1108,11 @@ function markAllNotificationsRead(reloadPage = false) {
                 window.location.reload();
             } else {
                 loadNavbarNotifications();
+                const dropdownEl = document.getElementById('notificationsDropdown');
+                if (dropdownEl) {
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownEl);
+                    if (bsDropdown) bsDropdown.hide();
+                }
             }
         }
     });

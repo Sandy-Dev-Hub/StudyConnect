@@ -66,6 +66,19 @@
                     {% endif %}
                 </div>
 
+                <!-- Display Name Section -->
+                <div class="mb-4">
+                    {{ form.display_name.label(class="form-label text-light") }}
+                    {{ form.display_name(class="form-control bg-dark text-light border-secondary") }}
+                    {% if form.display_name.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.display_name.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
                 <!-- Bio Section -->
                 <div class="mb-4">
                     {{ form.bio.label(class="form-label text-light") }}

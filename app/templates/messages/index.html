@@ -4,8 +4,8 @@
 {% block extra_css %}
 <style>
 .chat-container {
-    height: calc(100vh - 200px);
-    min-height: 500px;
+    height: calc(100vh - 110px);
+    min-height: 550px;
 }
 .chat-sidebar {
     height: 100%;
@@ -23,12 +23,12 @@
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 .chat-message-bubble {
     max-width: 75%;
-    padding: 0.75rem 1.25rem;
-    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 1.25rem;
     position: relative;
     word-break: break-word;
 }
@@ -90,7 +90,7 @@
                     <div id="dm-list" class="d-flex flex-column">
                         {% if conversations %}
                             {% for c in conversations %}
-                            <div class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_user and active_user.id == c.other_user.id %}active{% endif %}"
+                            <div id="conv-{{ c.other_user.id }}" class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_user and active_user.id == c.other_user.id %}active{% endif %}"
                                  data-type="dm" data-id="{{ c.other_user.id }}" data-username="{{ c.other_user.username }}">
                                 <div class="position-relative flex-shrink-0">
                                     {% if c.other_user.profile and c.other_user.profile.avatar_filename %}
@@ -105,13 +105,11 @@
                                 <div class="overflow-hidden flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <strong class="text-white text-truncate">{{ c.other_user.username }}</strong>
-                                        <span class="text-muted" style="font-size: 0.7rem;">{{ c.last_message_time }}</span>
+                                        <span class="text-muted sidebar-time" style="font-size: 0.7rem;">{{ c.last_message_time }}</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-1">
-                                        <small class="text-muted text-truncate d-block" style="max-width: 130px;">{{ c.last_message }}</small>
-                                        {% if c.unread_count > 0 %}
-                                            <span class="badge bg-warning text-dark rounded-pill">{{ c.unread_count }}</span>
-                                        {% endif %}
+                                        <small class="text-muted text-truncate d-block sidebar-msg" style="max-width: 130px;">{{ c.last_message }}</small>
+                                        <span class="badge bg-warning text-dark rounded-pill sidebar-badge {% if c.unread_count == 0 %}d-none{% endif %}">{{ c.unread_count }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -126,14 +124,19 @@
                     <div id="group-list" class="d-flex flex-column">
                         {% if user_groups %}
                             {% for g in user_groups %}
-                            <div class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_group and active_group.id == g.id %}active{% endif %}"
+                            <div id="group-{{ g.id }}" class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_group and active_group.id == g.id %}active{% endif %}"
                                  data-type="group" data-id="{{ g.id }}" data-name="{{ g.name }}">
                                 <div class="nav-avatar d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; font-size: 1.1rem; background-color: {{ g.avatar_color }};">
                                     {{ g.name[:2].upper() }}
                                 </div>
-                                <div class="overflow-hidden">
-                                    <strong class="text-white d-block text-truncate">{{ g.name }}</strong>
-                                    <small class="text-muted"><i class="bi bi-people me-1"></i>{{ g.member_count }} Members</small>
+                                <div class="overflow-hidden flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-white d-block text-truncate">{{ g.name }}</strong>
+                                        <span class="text-muted sidebar-time" style="font-size: 0.7rem;"></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-1">
+                                        <small class="text-muted sidebar-msg text-truncate d-block" style="max-width: 130px;"><i class="bi bi-people me-1"></i>{{ g.member_count }} Members</small>
+                                    </div>
                                 </div>
                             </div>
                             {% endfor %}
@@ -171,7 +174,17 @@
 
                     <!-- Input Form -->
                     <div id="chat-input-container" class="p-3 border-top border-secondary border-opacity-25 bg-dark bg-opacity-50 d-none">
-                        <form id="chat-form" class="d-flex gap-2" onsubmit="return false;">
+                        <form id="chat-form" class="d-flex gap-2 align-items-center" onsubmit="return false;">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary border-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach">
+                                    <i class="bi bi-paperclip fs-5"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark shadow-sm border border-secondary border-opacity-25">
+                                    <li><a class="dropdown-item" href="#" id="btn-attach-image"><i class="bi bi-image me-2 text-primary"></i>Send Image</a></li>
+                                    <li><a class="dropdown-item" href="#" id="btn-attach-location"><i class="bi bi-geo-alt-fill me-2 text-danger"></i>Share Location</a></li>
+                                </ul>
+                            </div>
+                            <input type="file" id="chat-image-input" accept="image/*" class="d-none">
                             <input type="text" id="message-input" class="form-control bg-dark text-light border-secondary" placeholder="Type your message here..." autocomplete="off">
                             <button type="submit" class="btn btn-glow px-4"><i class="bi bi-send-fill"></i></button>
                         </form>
@@ -227,10 +240,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle incoming new messages
     socket.on('new_message', (msg) => {
-        if ((currentChatType === 'dm' && (msg.sender_id === currentTargetId || msg.sender_id === currentUserId)) ||
+        // Update sidebar
+        if (currentChatType === 'dm' && msg.group_id === null) {
+            const otherId = msg.sender_id === currentUserId ? msg.recipient_id : msg.sender_id;
+            // Since recipient_id is not in msg dict, let's just find the dm item if it exists
+            const sidebarItem = document.getElementById(`conv-${msg.sender_id === currentUserId ? currentTargetId : msg.sender_id}`);
+            if (sidebarItem) {
+                const msgText = sidebarItem.querySelector('.sidebar-msg');
+                const timeText = sidebarItem.querySelector('.sidebar-time');
+                if (msgText) msgText.textContent = msg.message_type !== 'text' ? 'Sent an attachment' : msg.body;
+                if (timeText) timeText.textContent = msg.created_at;
+                
+                // If not active chat and not sent by me, increment badge
+                if (msg.sender_id !== currentUserId && (currentChatType !== 'dm' || currentTargetId !== msg.sender_id)) {
+                    const badge = sidebarItem.querySelector('.sidebar-badge');
+                    if (badge) {
+                        let cnt = parseInt(badge.textContent || '0');
+                        badge.textContent = cnt + 1;
+                        badge.classList.remove('d-none');
+                    }
+                }
+                
+                // Move to top
+                const dmList = document.getElementById('dm-list');
+                if (dmList) dmList.insertBefore(sidebarItem, dmList.firstChild);
+            }
+        }
+
+        if ((currentChatType === 'dm' && (msg.sender_id === currentTargetId || msg.sender_id === currentUserId) && msg.group_id === null) ||
             (currentChatType === 'group' && msg.group_id === currentTargetId)) {
             appendMessageBubble(msg);
             scrollToBottom();
+            
+            // If it's a DM and I am receiving it, emit read event immediately since I'm looking at it
+            if (currentChatType === 'dm' && msg.sender_id === currentTargetId) {
+                socket.emit('message_read', { type: 'dm', target_id: currentTargetId });
+            }
+        }
+    });
+
+    socket.on('messages_marked_read', (data) => {
+        if (currentChatType === 'dm' && data.read_by === currentTargetId) {
+            // Find all single ticks in this conversation and make them double
+            document.querySelectorAll('.chat-message-bubble.sent .read-tick').forEach(tick => {
+                tick.innerHTML = '&#10003;&#10003;'; // double check
+            });
         }
     });
 
@@ -307,6 +361,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     messagesBox.innerHTML = '<div class="text-center my-auto text-muted small"><p>No messages in this chat yet. Say hello!</p></div>';
                 }
                 scrollToBottom();
+                
+                if (type === 'dm') {
+                    socket.emit('message_read', { type: 'dm', target_id: id });
+                }
             });
     }
 
@@ -320,13 +378,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const isSent = msg.sender_id === currentUserId;
         const div = document.createElement('div');
         div.className = `chat-message-bubble ${isSent ? 'sent' : 'received'} animate-fade-in-up`;
+        div.dataset.msgId = msg.id;
         
         let headerHtml = '';
         if (!isSent && currentChatType === 'group') {
             headerHtml = `<div class="small text-warning fw-bold mb-1">${msg.sender_username}</div>`;
         }
         
-        div.innerHTML = `${headerHtml}<div>${msg.body}</div><div class="text-end mt-1" style="font-size: 0.65rem; opacity: 0.75;">${msg.created_at}</div>`;
+        let bodyHtml = '';
+        if (msg.message_type === 'image' && msg.attachment_url) {
+            bodyHtml = `<div><img src="${msg.attachment_url}" class="img-fluid rounded mt-1 mb-1" style="max-height: 250px;" alt="Image"></div>`;
+        } else if (msg.message_type === 'location' && msg.location_lat && msg.location_lng) {
+            bodyHtml = `<div>
+                <a href="https://www.google.com/maps/search/?api=1&query=${msg.location_lat},${msg.location_lng}" target="_blank" class="btn btn-sm btn-light text-dark fw-bold mt-1 mb-1">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>View Location on Map
+                </a>
+            </div>`;
+        } else {
+            bodyHtml = `<div>${msg.body}</div>`;
+        }
+        
+        // Read ticks
+        let tickHtml = '';
+        if (isSent && currentChatType === 'dm') {
+            tickHtml = `<span class="read-tick ms-1">${msg.is_read ? '&#10003;&#10003;' : '&#10003;'}</span>`;
+        }
+        
+        div.innerHTML = `${headerHtml}${bodyHtml}<div class="text-end mt-1" style="font-size: 0.65rem; opacity: 0.75;">${msg.created_at}${tickHtml}</div>`;
         messagesBox.appendChild(div);
     }
 
@@ -353,9 +431,76 @@ document.addEventListener('DOMContentLoaded', function() {
         const text = input.value.trim();
         if (!text || !currentChatType || !currentTargetId) return;
 
-        socket.emit('send_chat_message', { type: currentChatType, target_id: currentTargetId, body: text });
+        socket.emit('send_chat_message', { type: currentChatType, target_id: currentTargetId, body: text, message_type: 'text' });
         input.value = '';
         socket.emit('typing_indicator', { type: currentChatType, target_id: currentTargetId, is_typing: false });
+    });
+
+    // Attachments
+    const btnAttachImage = document.getElementById('btn-attach-image');
+    const chatImageInput = document.getElementById('chat-image-input');
+    const btnAttachLocation = document.getElementById('btn-attach-location');
+
+    btnAttachImage.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!currentChatType || !currentTargetId) return;
+        chatImageInput.click();
+    });
+
+    chatImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file || !currentChatType || !currentTargetId) return;
+        
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('type', currentChatType);
+        formData.append('target_id', currentTargetId);
+        
+        fetch('/messages/api/upload_image', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="csrf_token"]')?.value || ''
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+            }
+            chatImageInput.value = ''; // Reset
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Upload failed');
+            chatImageInput.value = '';
+        });
+    });
+
+    btnAttachLocation.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!currentChatType || !currentTargetId) return;
+        
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+        
+        btnAttachLocation.innerHTML = '<i class="bi bi-hourglass-split me-2 text-danger"></i>Locating...';
+        navigator.geolocation.getCurrentPosition((position) => {
+            btnAttachLocation.innerHTML = '<i class="bi bi-geo-alt-fill me-2 text-danger"></i>Share Location';
+            socket.emit('send_chat_message', { 
+                type: currentChatType, 
+                target_id: currentTargetId, 
+                body: '',
+                message_type: 'location',
+                location_lat: position.coords.latitude,
+                location_lng: position.coords.longitude
+            });
+        }, (error) => {
+            btnAttachLocation.innerHTML = '<i class="bi bi-geo-alt-fill me-2 text-danger"></i>Share Location';
+            alert('Unable to retrieve your location');
+        }, { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 });
     });
 
     // Check if auto-open requested via URL parameters

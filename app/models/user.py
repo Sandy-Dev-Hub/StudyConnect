@@ -72,8 +72,14 @@ class User(UserMixin, db.Model):
         return User.query.filter_by(email=email).first()
 
     @property
+    def display_name(self):
+        if self.profile and self.profile.display_name:
+            return self.profile.display_name
+        return self.username
+
+    @property
     def initials(self):
-        return self.username[:2].upper()
+        return self.display_name[:2].upper()
 
     @property
     def question_count(self):

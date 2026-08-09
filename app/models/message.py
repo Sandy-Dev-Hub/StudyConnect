@@ -47,6 +47,10 @@ class Message(db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey('study_groups.id', name='fk_messages_group_id', ondelete='CASCADE'), nullable=True, index=True)
     sender_id = db.Column(db.Integer, db.ForeignKey('users.id', name='fk_messages_sender_id', ondelete='CASCADE'), nullable=False, index=True)
     body = db.Column(db.Text, nullable=False)
+    message_type = db.Column(db.String(20), default='text', nullable=False)
+    attachment_filename = db.Column(db.String(120), nullable=True)
+    location_lat = db.Column(db.Float, nullable=True)
+    location_lng = db.Column(db.Float, nullable=True)
     is_read = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
@@ -64,6 +68,11 @@ class Message(db.Model):
             'sender_avatar_color': self.sender.avatar_color,
             'sender_avatar_url': f"/static/uploads/avatars/{self.sender.profile.avatar_filename}" if self.sender.profile and self.sender.profile.avatar_filename else None,
             'body': self.body,
+            'message_type': self.message_type,
+            'attachment_filename': self.attachment_filename,
+            'attachment_url': f"/static/uploads/attachments/{self.attachment_filename}" if self.attachment_filename else None,
+            'location_lat': self.location_lat,
+            'location_lng': self.location_lng,
             'is_read': self.is_read,
             'created_at': self.created_at.strftime('%I:%M %p')
         }

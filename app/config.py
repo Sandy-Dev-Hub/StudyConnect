@@ -17,9 +17,11 @@ class Config:
     # Database
     _db_url = os.environ.get('DATABASE_URL', '').strip()
     if _db_url.startswith('postgres://'):
-        _db_url = _db_url.replace('postgres://', 'postgresql+psycopg://', 1)
-    elif _db_url.startswith('postgresql://') and not _db_url.startswith('postgresql+'):
-        _db_url = _db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+        _db_url = _db_url.replace('postgres://', 'postgresql+pg8000://', 1)
+    if _db_url.startswith('postgresql://') and not _db_url.startswith('postgresql+'):
+        _db_url = _db_url.replace('postgresql://', 'postgresql+pg8000://', 1)
+    if _db_url.startswith('postgresql+psycopg://'):
+        _db_url = _db_url.replace('postgresql+psycopg://', 'postgresql+pg8000://', 1)
     SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///studyconnect.db'
 
     # Mail / Brevo API

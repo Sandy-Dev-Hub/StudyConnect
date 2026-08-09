@@ -5,7 +5,10 @@ from app.messages.services import (
     get_user_conversations,
     get_conversation_messages,
     get_group_messages,
-    mark_conversation_read
+    mark_conversation_read,
+    save_chat_image,
+    create_dm_message,
+    create_group_message
 )
 from app.models.message import Conversation
 from app.models.user import User
@@ -86,3 +89,60 @@ def get_group_history(group_id):
         },
         'messages': messages
     })
+@messages_bp.route('/api/upload_image', methods=['POST'])
+@login_required
+def upload_image():
+    chat_type = request.form.get('type')
+    target_id = request.form.get('target_id', type=int)
+    
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image provided'}), 400
+        
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No image selected'}), 400
+        
+    filename = save_chat_image(file)
+    if not filename:
+        return jsonify({'error': 'Invalid image type or upload failed'}), 400
+        
+    msg = None
+    if chat_type == 'dm':
+        msg = create_dm_message(
+            sender_id=current_user.id,
+            recipient_id=target_id,
+            message_type='image',
+            attachment_filename=filename
+        )
+    elif chat_type == 'group':
+        msg = create_group_message(
+            sender_id=current_user.id,
+            group_id=target_id,
+            message_type='image',
+            attachment_filename=filename
+        )
+        
+    if msg:
+        # We also need to emit the socket event from here if possible, 
+        # or we return success and the frontend emits a 'send_chat_message' with type=image.
+
+
+        # Actually, if we return the message data, frontend can just append it, 
+        # but the *other* users won't get it unless we emit via socket server.
+        # It's better to let the frontend emit an event, but wait, the frontend doesn't know the DB id.
+        # The frontend can just rely on this endpoint returning the message, and then we emit from here.
+        # However, we don't have socketio imported directly. We can import socketio from app.extensions.
+        from app.extensions import socketio
+        msg_data = msg.to_dict()
+        if chat_type == 'dm':
+            socketio.emit('new_message', msg_data, room=f"dm_{msg.conversation_id}")
+            # notification
+            recipient = User.query.get(target_id)
+            if recipient:
+                socketio.emit('chat_notification', msg_data, room=f"user_{recipient.id}")
+        elif chat_type == 'group':
+            socketio.emit('new_message', msg_data, room=f"group_{target_id}")
+            
+        return jsonify({'success': True, 'message': msg_data})
+        
+    return jsonify({'error': 'Failed to save message'}), 500

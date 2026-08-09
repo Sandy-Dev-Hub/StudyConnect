@@ -1,10 +1,14 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import TextAreaField, SelectField, SubmitField
+from wtforms import TextAreaField, SelectField, SubmitField, StringField
 from wtforms.validators import Length
 from flask import current_app
 
 class ProfileEditForm(FlaskForm):
+    display_name = StringField('Display Name', validators=[
+        Length(min=3, max=80, message='Display Name must be between 3 and 80 characters.')
+    ], render_kw={'placeholder': 'Your unique display name'})
+
     bio = TextAreaField('About Me / Bio', validators=[
         Length(max=500, message='Bio cannot exceed 500 characters.')
     ], render_kw={'placeholder': 'Tell the community about your study goals, favorite subjects, target exam...', 'rows': 4})

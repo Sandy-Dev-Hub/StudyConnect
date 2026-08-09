@@ -117,14 +117,16 @@ class LocationService:
 
             profile = u.profile
             if has_request_context():
-                avatar_url = url_for('static', filename=f'uploads/avatars/{profile.avatar_filename}') if profile and profile.avatar_filename else url_for('static', filename='images/default_avatar.png')
+                avatar_url = url_for('static', filename=f'uploads/avatars/{profile.avatar_filename}') if profile and profile.avatar_filename else None
             else:
-                avatar_url = f'/static/uploads/avatars/{profile.avatar_filename}' if profile and profile.avatar_filename else '/static/images/default_avatar.png'
+                avatar_url = f'/static/uploads/avatars/{profile.avatar_filename}' if profile and profile.avatar_filename else None
 
             nearby_data.append({
                 'user_id': u.id,
-                'username': u.username,
+                'username': u.display_name,
                 'avatar_url': avatar_url,
+                'avatar_color': u.avatar_color,
+                'initials': u.initials,
                 'distance_km': round(dist, 1),
                 'lat': meta.get('lat'),
                 'lng': meta.get('lng'),

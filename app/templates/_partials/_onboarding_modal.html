@@ -1,0 +1,157 @@
+<!-- Onboarding Modal -->
+<div class="modal fade" id="onboardingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="onboardingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-secondary border-opacity-50 text-light">
+            <div class="modal-header border-bottom border-secondary border-opacity-25 justify-content-center">
+                <h5 class="modal-title" id="onboardingModalLabel">
+                    <i class="bi bi-stars text-warning me-2"></i> Complete Your Profile
+                </h5>
+            </div>
+            <div class="modal-body p-3 text-center">
+                <!-- Motivational Quote -->
+                <figure class="mb-3">
+                    <blockquote class="blockquote small fst-italic text-light">
+                        "Success is the sum of small efforts, repeated day in and day out."
+                    </blockquote>
+                    <figcaption class="blockquote-footer text-muted mt-1 mb-0" style="font-size: 0.75rem;">
+                        Robert Collier
+                    </figcaption>
+                </figure>
+
+                <p class="small text-muted mb-3">Set up your display name and choose an avatar to find study matches!</p>
+
+                <form id="onboardingForm">
+                    <!-- Display Name -->
+                    <div class="mb-3 text-start">
+                        <label for="onboardDisplayName" class="form-label small text-muted text-uppercase fw-bold mb-1">Display Name</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text glass-input border-secondary border-opacity-25 text-muted">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <input type="text" class="form-control glass-input" id="onboardDisplayName" name="display_name" placeholder="Choose a unique name..." required minlength="3" maxlength="80">
+                        </div>
+                        <div class="invalid-feedback text-start" id="displayNameFeedback"></div>
+                    </div>
+
+                    <!-- Avatar Selection -->
+                    <div class="mb-3 text-start">
+                        <label class="form-label small text-muted text-uppercase fw-bold d-block mb-2">Choose an Avatar</label>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            {% for i in range(1, 6) %}
+                            <label class="avatar-option position-relative cursor-pointer">
+                                <input type="radio" name="preset_avatar" value="preset{{ i }}.svg" class="d-none" required {% if i == 1 %}checked{% endif %}>
+                                <div class="avatar-img-wrapper rounded-circle border border-2 border-transparent transition-all overflow-hidden" style="width: 55px; height: 55px; background-color: var(--card-bg);">
+                                    <img src="{{ url_for('static', filename='img/avatars/preset' ~ i ~ '.svg') }}" class="w-100 h-100 object-fit-cover" alt="Preset Avatar {{ i }}">
+                                </div>
+                                <div class="avatar-check position-absolute bottom-0 end-0 bg-accent text-dark rounded-circle d-flex align-items-center justify-content-center opacity-0 transition-all shadow" style="width: 16px; height: 16px;">
+                                    <i class="bi bi-check" style="font-size: 0.75rem;"></i>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-info-circle me-1"></i>You can upload your own custom picture later in your profile settings.</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn btn-accent btn-sm py-2" id="onboardSubmitBtn">
+                            <span class="btn-text">Save & Continue <i class="bi bi-arrow-right ms-2"></i></span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-option input:checked + .avatar-img-wrapper {
+        border-color: var(--accent) !important;
+        transform: scale(1.05);
+        box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.4);
+    }
+    .avatar-option input:checked ~ .avatar-check {
+        opacity: 1 !important;
+    }
+    .avatar-option:hover .avatar-img-wrapper {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    .avatar-img-wrapper.border-transparent {
+        border-color: transparent;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const onboardingModalEl = document.getElementById('onboardingModal');
+    if (onboardingModalEl) {
+        // Initialize modal and prevent closing by clicking outside or pressing escape
+        const modal = new bootstrap.Modal(onboardingModalEl, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        modal.show();
+
+        const form = document.getElementById('onboardingForm');
+        const submitBtn = document.getElementById('onboardSubmitBtn');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const spinner = submitBtn.querySelector('.spinner-border');
+        const feedback = document.getElementById('displayNameFeedback');
+        const displayNameInput = document.getElementById('onboardDisplayName');
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            btnText.classList.add('d-none');
+            spinner.classList.remove('d-none');
+            submitBtn.disabled = true;
+            displayNameInput.classList.remove('is-invalid');
+            feedback.textContent = '';
+
+            const formData = new FormData(form);
+            const data = {
+                display_name: formData.get('display_name'),
+                preset_avatar: formData.get('preset_avatar')
+            };
+
+            fetch('/api/profile/onboard', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    modal.hide();
+                    // Reload to reflect new display name and avatar everywhere
+                    window.location.reload();
+                } else {
+                    // Handle error (e.g. name taken)
+                    btnText.classList.remove('d-none');
+                    spinner.classList.add('d-none');
+                    submitBtn.disabled = false;
+                    
+                    displayNameInput.classList.add('is-invalid');
+                    feedback.textContent = data.message || 'Error saving profile.';
+                }
+            })
+            .catch(err => {
+                btnText.classList.remove('d-none');
+                spinner.classList.add('d-none');
+                submitBtn.disabled = false;
+                
+                displayNameInput.classList.add('is-invalid');
+                feedback.textContent = 'Network error. Please try again.';
+            });
+        });
+    }
+});
+</script>

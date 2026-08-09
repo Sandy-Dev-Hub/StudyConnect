@@ -29,7 +29,7 @@ def home():
     if stats is None:
         stats = {
             'total_questions': Question.query.count(),
-            'total_users': User.query.count()
+            'total_users': User.query.filter(User.last_active_date.is_not(None)).count()
         }
         cache.set('home:statistics', stats, timeout=300)
 
@@ -83,12 +83,22 @@ def profile(user_id):
 @main_bp.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
+    from app.models.user_profile import UserProfile
     profile_data = get_or_create_profile(current_user)
     form = ProfileEditForm()
 
     if form.validate_on_submit():
+        # Check display_name uniqueness
+        dn = form.display_name.data
+        if dn:
+            existing = UserProfile.query.filter_by(display_name=dn).first()
+            if existing and existing.user_id != current_user.id:
+                flash('That display name is already taken.', 'danger')
+                return render_template('profile/edit.html', form=form, profile=profile_data)
+
         update_user_profile(
             user=current_user,
+            display_name=dn,
             bio=form.bio.data,
             subject_tag=form.subject_tag.data,
             exam_tag=form.exam_tag.data,
@@ -99,11 +109,51 @@ def edit_profile():
         return redirect(url_for('main.profile', user_id=current_user.id))
 
     if request.method == 'GET':
+        form.display_name.data = profile_data.display_name
         form.bio.data = profile_data.bio
         form.subject_tag.data = profile_data.subject_tag or ''
         form.exam_tag.data = profile_data.exam_tag or ''
 
     return render_template('profile/edit.html', form=form, profile=profile_data)
+
+
+@main_bp.route('/api/profile/onboard', methods=['POST'])
+@login_required
+def profile_onboard():
+    from app.models.user_profile import UserProfile
+    import shutil
+    import os
+    
+    data = request.get_json()
+    display_name = data.get('display_name')
+    preset_avatar = data.get('preset_avatar')
+    
+    if not display_name or not preset_avatar:
+        return {'success': False, 'message': 'Missing fields.'}, 400
+        
+    # Check if display name is unique
+    existing = UserProfile.query.filter_by(display_name=display_name).first()
+    if existing and existing.user_id != current_user.id:
+        return {'success': False, 'message': 'Display name is already taken. Please choose another.'}, 400
+        
+    profile = get_or_create_profile(current_user)
+    profile.display_name = display_name
+    
+    # preset_avatar is like preset1.svg
+    # We copy it to the user's avatar_filename
+    src_path = os.path.join(current_app.root_path, 'static', 'img', 'avatars', preset_avatar)
+    if os.path.exists(src_path):
+        ext = os.path.splitext(preset_avatar)[1]
+        new_filename = f"user_{current_user.id}_avatar{ext}"
+        dest_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'avatars', new_filename)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        shutil.copy2(src_path, dest_path)
+        profile.avatar_filename = new_filename
+        
+    profile.onboarding_completed = True
+    db.session.commit()
+    
+    return {'success': True}
 
 
 @main_bp.app_errorhandler(404)

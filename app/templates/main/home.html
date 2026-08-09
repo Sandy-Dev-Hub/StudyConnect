@@ -58,27 +58,38 @@
             </div>
             <div class="col-lg-5 d-none d-lg-block">
                 <div class="hero-illustration animate-float">
-                    <div class="hero-card-stack">
-                        <div class="hero-mock-card hero-mock-card-1">
+                    <div id="heroCardSwap">
+                        <div class="gsap-card">
                             <div class="d-flex align-items-center mb-2">
-                                <div class="avatar-xs" style="background:#6C63FF">AB</div>
-                                <span class="ms-2 small text-muted">asked 2m ago</span>
+                                <div class="avatar-xs" style="background:#6C63FF">SJ</div>
+                                <span class="ms-2 small text-muted">asked 15m ago</span>
                             </div>
-                            <div class="small fw-semibold">How to solve quadratic equations?</div>
+                            <div class="small fw-semibold">What is the difference between mitosis and meiosis?</div>
                             <div class="d-flex gap-2 mt-2">
-                                <span class="tag tag-subject" style="font-size:0.65rem">Mathematics</span>
-                                <span class="tag tag-exam" style="font-size:0.65rem">JEE Main</span>
+                                <span class="tag tag-subject" style="font-size:0.65rem">Biology</span>
+                                <span class="tag tag-exam" style="font-size:0.65rem">NEET</span>
                             </div>
                         </div>
-                        <div class="hero-mock-card hero-mock-card-2">
+                        <div class="gsap-card">
                             <div class="d-flex align-items-center mb-2">
-                                <div class="avatar-xs" style="background:#43E97B">CD</div>
-                                <span class="ms-2 small text-muted">answered</span>
-                                <span class="badge badge-resolved ms-auto" style="font-size:0.6rem"><i class="bi bi-check-circle-fill me-1"></i>Accepted</span>
+                                <div class="avatar-xs" style="background:#FF6B6B">AK</div>
+                                <span class="ms-2 small text-muted">asked 1h ago</span>
                             </div>
-                            <div class="small">Use the quadratic formula: x = (-b ± √(b²-4ac)) / 2a</div>
-                            <div class="d-flex align-items-center mt-2">
-                                <span class="text-success small"><i class="bi bi-star-fill"></i> +25 pts</span>
+                            <div class="small fw-semibold">Can someone explain Faraday's Law of Induction?</div>
+                            <div class="d-flex gap-2 mt-2">
+                                <span class="tag tag-subject" style="font-size:0.65rem">Physics</span>
+                                <span class="tag tag-exam" style="font-size:0.65rem">JEE Advanced</span>
+                            </div>
+                        </div>
+                        <div class="gsap-card">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="avatar-xs" style="background:#4CAF50">MR</div>
+                                <span class="ms-2 small text-muted">asked 3h ago</span>
+                            </div>
+                            <div class="small fw-semibold">How do you balance a complex redox reaction?</div>
+                            <div class="d-flex gap-2 mt-2">
+                                <span class="tag tag-subject" style="font-size:0.65rem">Chemistry</span>
+                                <span class="tag tag-exam" style="font-size:0.65rem">Class 12</span>
                             </div>
                         </div>
                     </div>
@@ -168,4 +179,140 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  #heroCardSwap {
+    width: 100%;
+    height: 400px;
+    position: relative;
+    perspective: 900px;
+    transform-style: preserve-3d;
+    margin-top: -20px;
+  }
+  .gsap-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--glass-shadow);
+    padding: 1.5rem;
+    width: 360px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform;
+    backdrop-filter: blur(10px);
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById('heroCardSwap');
+  if (!container) return;
+  
+  const cards = Array.from(container.querySelectorAll('.gsap-card'));
+  if (cards.length === 0) return;
+
+  const cardDistance = 45;
+  const verticalDistance = 50;
+  const delay = 3000;
+  const skewAmount = 6;
+  const total = cards.length;
+  
+  const config = {
+    ease: 'elastic.out(0.6,0.9)',
+    durDrop: 2,
+    durMove: 2,
+    durReturn: 2,
+    promoteOverlap: 0.9,
+    returnDelay: 0.05
+  };
+
+  const makeSlot = (i, distX, distY, total) => ({
+    x: i * distX,
+    y: -i * distY,
+    z: -i * distX * 1.5,
+    zIndex: total - i
+  });
+
+  const placeNow = (el, slot, skew) => {
+    gsap.set(el, {
+      x: slot.x,
+      y: slot.y,
+      z: slot.z,
+      xPercent: -50,
+      yPercent: -50,
+      skewY: skew,
+      transformOrigin: 'center center',
+      zIndex: slot.zIndex,
+      force3D: true
+    });
+  };
+
+  cards.forEach((card, i) => placeNow(card, makeSlot(i, cardDistance, verticalDistance, total), skewAmount));
+
+  let order = Array.from({ length: total }, (_, i) => i);
+  let tl = null;
+
+  const swap = () => {
+    if (order.length < 2) return;
+
+    const front = order[0];
+    const rest = order.slice(1);
+    const elFront = cards[front];
+    tl = gsap.timeline();
+
+    tl.to(elFront, {
+      y: '+=500',
+      duration: config.durDrop,
+      ease: config.ease
+    });
+
+    tl.addLabel('promote', `-=${config.durDrop * config.promoteOverlap}`);
+    rest.forEach((idx, i) => {
+      const el = cards[idx];
+      const slot = makeSlot(i, cardDistance, verticalDistance, total);
+      tl.set(el, { zIndex: slot.zIndex }, 'promote');
+      tl.to(el, {
+          x: slot.x,
+          y: slot.y,
+          z: slot.z,
+          duration: config.durMove,
+          ease: config.ease
+      }, `promote+=${i * 0.15}`);
+    });
+
+    const backSlot = makeSlot(total - 1, cardDistance, verticalDistance, total);
+    tl.addLabel('return', `promote+=${config.durMove * config.returnDelay}`);
+    tl.call(() => { gsap.set(elFront, { zIndex: backSlot.zIndex }); }, undefined, 'return');
+    tl.to(elFront, {
+      x: backSlot.x,
+      y: backSlot.y,
+      z: backSlot.z,
+      duration: config.durReturn,
+      ease: config.ease
+    }, 'return');
+
+    order = [...rest, front];
+  };
+
+  let interval = setInterval(swap, delay);
+  
+  // Pause on hover
+  container.addEventListener('mouseenter', () => {
+      if (tl) tl.pause();
+      clearInterval(interval);
+  });
+  container.addEventListener('mouseleave', () => {
+      if (tl) tl.play();
+      interval = setInterval(swap, delay);
+  });
+});
+</script>
 {% endblock %}

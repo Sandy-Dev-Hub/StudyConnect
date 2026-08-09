@@ -3,6 +3,40 @@ from app.extensions import db
 from app.models.message import Conversation, Message
 from app.models.user import User
 from app.models.group import StudyGroup
+import os
+import uuid
+from flask import current_app
+from PIL import Image as PILImage
+
+def allowed_file(filename):
+    allowed = current_app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif', 'webp'})
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed
+
+def save_chat_image(file):
+    if file and file.filename and allowed_file(file.filename):
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        filename = f'chat_{uuid.uuid4().hex}.{ext}'
+        
+        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'attachments')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        filepath = os.path.join(upload_dir, filename)
+        
+        img = PILImage.open(file)
+        # Resize if too large, e.g., max 1024x1024 for chat
+        img.thumbnail((1024, 1024), PILImage.LANCZOS)
+        
+        if ext in ('jpg', 'jpeg'):
+            img.save(filepath, 'JPEG', quality=85, optimize=True)
+        elif ext == 'png':
+            img.save(filepath, 'PNG', optimize=True)
+        elif ext == 'webp':
+            img.save(filepath, 'WEBP', quality=85)
+        else:
+            file.save(filepath)
+            
+        return filename
+    return None
 
 def get_user_conversations(user_id):
     """Get all DM conversations for a user, formatted with last message and unread count."""
@@ -35,20 +69,36 @@ def get_group_messages(group_id, limit=50):
     messages = Message.query.filter_by(group_id=group_id).order_by(Message.created_at.asc()).all()
     return [m.to_dict() for m in messages[-limit:]]
 
-def create_dm_message(sender_id, recipient_id, body):
-    if not body or not body.strip():
+def create_dm_message(sender_id, recipient_id, body=None, message_type='text', attachment_filename=None, location_lat=None, location_lng=None):
+    if message_type == 'text' and (not body or not body.strip()):
         return None
     conv = Conversation.get_or_create(sender_id, recipient_id)
-    msg = Message(conversation_id=conv.id, sender_id=sender_id, body=body.strip())
+    msg = Message(
+        conversation_id=conv.id, 
+        sender_id=sender_id, 
+        body=body.strip() if body else "",
+        message_type=message_type,
+        attachment_filename=attachment_filename,
+        location_lat=location_lat,
+        location_lng=location_lng
+    )
     conv.updated_at = datetime.now(timezone.utc)
     db.session.add(msg)
     db.session.commit()
     return msg
 
-def create_group_message(sender_id, group_id, body):
-    if not body or not body.strip():
+def create_group_message(sender_id, group_id, body=None, message_type='text', attachment_filename=None, location_lat=None, location_lng=None):
+    if message_type == 'text' and (not body or not body.strip()):
         return None
-    msg = Message(group_id=group_id, sender_id=sender_id, body=body.strip())
+    msg = Message(
+        group_id=group_id, 
+        sender_id=sender_id, 
+        body=body.strip() if body else "",
+        message_type=message_type,
+        attachment_filename=attachment_filename,
+        location_lat=location_lat,
+        location_lng=location_lng
+    )
     db.session.add(msg)
     db.session.commit()
     return msg
