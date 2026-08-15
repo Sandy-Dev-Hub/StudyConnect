@@ -33,6 +33,31 @@ class AnalyticsHooks:
 class LocationService:
     """Service handling secure location sharing, coordinate jitter, and discovery feeds."""
     @staticmethod
+    def resolve_ip_location(ip_address=None):
+        """Fetch IP Geolocation via free ipapi REST API."""
+        import urllib.request
+        import json
+
+        try:
+            url = "https://ipapi.co/json/" if not ip_address or ip_address in ('127.0.0.1', 'localhost', '::1') else f"https://ipapi.co/{ip_address}/json/"
+            req = urllib.request.Request(url, headers={'User-Agent': 'StudyConnect/1.0'})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode('utf-8'))
+                    if 'latitude' in data and 'longitude' in data:
+                        return {
+                            'lat': float(data['latitude']),
+                            'lng': float(data['longitude']),
+                            'city': data.get('city', ''),
+                            'region': data.get('region', ''),
+                            'country': data.get('country_name', '')
+                        }
+        except Exception as e:
+            if has_request_context():
+                current_app.logger.warning(f"[NEARBY IP GEO] Failed to resolve IP location: {e}")
+        return None
+
+    @staticmethod
     def share_location(user_id, lat, lng, subject_tag, exam_tag):
         # Validate coordinate boundaries
         try:
@@ -44,9 +69,9 @@ class LocationService:
         if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
             raise ValueError("Coordinates out of valid geographical boundaries.")
 
-        # Apply randomized jitter offset (±0.0005 deg ≈ 50 meters) then round to 3 decimal places (~111m precision)
-        jitter_lat = round(lat + random.uniform(-0.0005, 0.0005), 3)
-        jitter_lng = round(lng + random.uniform(-0.0005, 0.0005), 3)
+        # High-precision coordinates (6 decimal places ≈ 0.1m accuracy)
+        precise_lat = round(lat, 6)
+        precise_lng = round(lng, 6)
 
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(hours=4)
@@ -59,7 +84,7 @@ class LocationService:
             'exam': exam_tag or 'Any'
         }
 
-        get_storage().set(user_id, jitter_lat, jitter_lng, metadata)
+        get_storage().set(user_id, precise_lat, precise_lng, metadata)
         AnalyticsHooks.increment('active_shares')
         AnalyticsHooks.increment('subjects', subject_tag or 'General')
 
@@ -71,7 +96,7 @@ class LocationService:
             'exam': exam_tag
         }, room='nearby_feed')
 
-        return {'lat': jitter_lat, 'lng': jitter_lng, 'expires_at': metadata['expires_at']}
+        return {'lat': precise_lat, 'lng': precise_lng, 'expires_at': metadata['expires_at']}
 
     @staticmethod
     def stop_sharing(user_id):

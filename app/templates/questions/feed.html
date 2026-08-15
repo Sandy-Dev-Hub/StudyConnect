@@ -21,11 +21,11 @@
             {% endif %}
         </div>
 
-        <!-- Filters Bar -->
-        <div class="glass-card filter-bar mb-4">
-            <form method="GET" action="{{ url_for('questions.feed') }}" class="row g-3 align-items-end" id="filter-form">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Subject</label>
+        <!-- Filter Section -->
+        <div class="glass-card mb-4 p-3">
+            <form method="GET" action="{{ url_for('questions.feed') }}" class="row g-3 justify-content-center align-items-end" id="filter-form">
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">SUBJECT</label>
                     <select name="subject" class="form-select glass-input" onchange="this.form.submit()">
                         <option value="">All Subjects</option>
                         {% for s in subjects %}
@@ -33,8 +33,8 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Exam</label>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">EXAM</label>
                     <select name="exam" class="form-select glass-input" onchange="this.form.submit()">
                         <option value="">All Exams</option>
                         {% for e in exams %}
@@ -42,8 +42,8 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Sort By</label>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">SORT BY</label>
                     <select name="sort" class="form-select glass-input" onchange="this.form.submit()">
                         <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest</option>
                         <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Oldest</option>
@@ -52,8 +52,8 @@
                         <option value="resolved" {% if current_sort == 'resolved' %}selected{% endif %}>Resolved</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Search</label>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">SEARCH</label>
                     <div class="input-group">
                         <input type="text" name="q" class="form-control glass-input" placeholder="Search..."
                                value="{{ search_query }}">

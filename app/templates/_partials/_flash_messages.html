@@ -2,18 +2,22 @@
     {% if messages %}
         <div class="flash-container">
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show glass-alert animate-fade-in-down" role="alert">
-                    {% if category == 'success' %}
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                    {% elif category == 'danger' %}
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    {% elif category == 'warning' %}
-                        <i class="bi bi-exclamation-circle-fill me-2"></i>
-                    {% elif category == 'info' %}
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                    {% endif %}
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="glass-alert alert glass-alert-{{ category }} fade show" role="alert">
+                    <span class="flash-icon">
+                        {% if category == 'success' %}
+                            <i class="bi bi-check-circle-fill"></i>
+                        {% elif category == 'danger' %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% elif category == 'warning' %}
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill"></i>
+                        {% endif %}
+                    </span>
+                    <span class="flash-text">{{ message }}</span>
+                    <button type="button" class="flash-close" data-bs-dismiss="alert" aria-label="Close">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             {% endfor %}
         </div>

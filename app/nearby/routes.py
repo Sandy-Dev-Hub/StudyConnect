@@ -20,6 +20,19 @@ def index():
     return render_template('nearby/index.html', is_sharing=is_sharing, shared_lat=shared_lat, shared_lng=shared_lng, expires_at=expires_at)
 
 
+@nearby_bp.route('/api/ip-location', methods=['GET'])
+def get_ip_location():
+    """Fetch user IP location using free ipapi REST service."""
+    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if user_ip and ',' in user_ip:
+        user_ip = user_ip.split(',')[0].strip()
+    
+    loc = LocationService.resolve_ip_location(user_ip)
+    if loc:
+        return jsonify({'success': True, 'location': loc})
+    return jsonify({'success': False, 'message': 'Could not resolve IP location.'}), 404
+
+
 @nearby_bp.route('/api/share', methods=['POST'])
 @login_required
 @rate_limit(max_requests=10, period_seconds=60)

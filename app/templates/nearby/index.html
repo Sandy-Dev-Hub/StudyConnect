@@ -279,12 +279,62 @@
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
+        // 100% Automated IP Geolocation resolution
+        function autoDetectIPLocation(autoShare = false) {
+            const loader = document.getElementById('mapLoader');
+            if (loader) loader.classList.remove('d-none');
+
+            // 1. Try ip-api.com
+            fetch('https://ip-api.com/json/?fields=status,country,regionName,city,lat,lon,query')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.status === 'success' && data.lat && data.lon) {
+                        myLat = parseFloat(data.lat);
+                        myLng = parseFloat(data.lon);
+                        if (loader) loader.classList.add('d-none');
+                        updateUserLocationCoordinates(myLat, myLng, autoShare);
+                        showToast('info', 'Location Auto-Detected', `IP Location: ${data.city || data.regionName || 'Detected'}`);
+                    } else {
+                        throw new Error('ip-api fallback');
+                    }
+                })
+                .catch(() => {
+                    // 2. Fallback to ipapi.co
+                    fetch('https://ipapi.co/json/')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (loader) loader.classList.add('d-none');
+                            if (data && data.latitude && data.longitude) {
+                                myLat = parseFloat(data.latitude);
+                                myLng = parseFloat(data.longitude);
+                                updateUserLocationCoordinates(myLat, myLng, autoShare);
+                                showToast('info', 'Location Auto-Detected', `IP Location: ${data.city || 'Detected'}`);
+                            } else {
+                                // 3. Fallback to server endpoint /nearby/api/ip-location
+                                fetch('/nearby/api/ip-location')
+                                    .then(r => r.json())
+                                    .then(res => {
+                                        if (res.success && res.location) {
+                                            myLat = res.location.lat;
+                                            myLng = res.location.lng;
+                                            updateUserLocationCoordinates(myLat, myLng, autoShare);
+                                            showToast('info', 'Location Auto-Detected', `IP Location: ${res.location.city || 'Detected'}`);
+                                        }
+                                    });
+                            }
+                        })
+                        .catch(() => {
+                            if (loader) loader.classList.add('d-none');
+                        });
+                });
+        }
+
         // Initialize Leaflet Map
         function initMap() {
-            map = L.map('nearbyMap', { zoomControl: false }).setView(
-                isSharing && myLat !== null && myLng !== null ? [myLat, myLng] : [37.7749, -122.4194], 
-                13
-            );
+            let initialLat = isSharing && myLat !== null ? myLat : 12.9716;
+            let initialLng = isSharing && myLng !== null ? myLng : 80.2450;
+
+            map = L.map('nearbyMap', { zoomControl: false }).setView([initialLat, initialLng], 13);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             // CartoDB Dark Matter Tiles
@@ -309,12 +359,15 @@
                 });
                 myMarker = L.marker([myLat, myLng], { icon: myIcon }).addTo(map);
                 myMarker.bindPopup("<b>You</b><br>Approximate broadcast location.");
-                
-                // updateSharingUI is defined below, so we'll call it after its definition, or just rely on it hoisting (function declaration is hoisted).
-                setTimeout(() => {
-                    updateSharingUI(true, expiresAt);
-                    fetchNearbyStudents();
-                }, 100);
+            } else {
+                // Auto-detect real-time IP location on first load
+                autoDetectIPLocation(false);
+            }
+
+            // Sync UI state immediately on map init
+            updateSharingUI(isSharing, expiresAt);
+            if (isSharing) {
+                fetchNearbyStudents();
             }
         }
         initMap();
@@ -344,12 +397,12 @@
             socket.off('study_request_received');
             socket.on('study_request_received', (data) => {
                 loadPendingRequests();
-                showToast(`New study request from ${data.requester_username}!`, 'info');
+                showToast('info', 'Study Request', `New study request from ${data.requester_username}!`);
             });
 
             socket.off('study_request_accepted');
             socket.on('study_request_accepted', (data) => {
-                showToast(`${data.recipient_username} accepted your study request! Opening chat...`, 'success');
+                showToast('success', 'Request Accepted', `${data.recipient_username} accepted your study request! Opening chat...`);
                 setTimeout(() => {
                     window.location.href = `/messages/?open_dm=${data.conversation_id}`;
                 }, 1500);
@@ -357,7 +410,7 @@
 
             socket.off('study_request_rejected');
             socket.on('study_request_rejected', (data) => {
-                showToast(`${data.recipient_username} declined the study request.`, 'warning');
+                showToast('warning', 'Request Declined', `${data.recipient_username} declined the study request.`);
             });
         }
 
@@ -374,15 +427,30 @@
             dot.style.boxShadow = '0 0 10px #28a745';
             title.textContent = 'Location Sharing Active';
             sub.textContent = expiresAt ? `Broadcasting approximate presence. Auto-expires at ${new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` : 'Broadcasting presence.';
-            shareBtn.classList.add('d-none');
-            stopBtn.classList.remove('d-none');
+            
+            if (shareBtn) {
+                shareBtn.classList.add('d-none');
+                shareBtn.style.setProperty('display', 'none', 'important');
+            }
+            if (stopBtn) {
+                stopBtn.classList.remove('d-none');
+                stopBtn.style.setProperty('display', 'inline-flex', 'important');
+            }
         } else {
             dot.className = 'd-inline-block rounded-circle bg-secondary me-2';
             dot.style.boxShadow = 'none';
             title.textContent = 'Location Sharing Offline';
             sub.textContent = 'Opt-in to share approximate coordinates and discover peers.';
-            shareBtn.classList.remove('d-none');
-            stopBtn.classList.add('d-none');
+
+            if (shareBtn) {
+                shareBtn.classList.remove('d-none');
+                shareBtn.style.setProperty('display', 'inline-flex', 'important');
+            }
+            if (stopBtn) {
+                stopBtn.classList.add('d-none');
+                stopBtn.style.setProperty('display', 'none', 'important');
+            }
+
             if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
             clearPeerMarkers();
             document.getElementById('studentsList').innerHTML = `
@@ -402,70 +470,138 @@
         peerMarkers = {};
     }
 
-    // Share Location Button
-    document.getElementById('shareBtn').addEventListener('click', () => {
-        if (!navigator.geolocation) {
-            showToast('Geolocation is not supported by your browser.', 'danger');
-            return;
+    let watchId = null;
+    let currentGeoData = {
+        lat: null,
+        lng: null,
+        accuracy: null,
+        timestamp: null,
+        speed: null,
+        heading: null
+    };
+
+    const geoOptions = {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+    };
+
+    // Live location tracking using watchPosition()
+    function startLiveLocationTracking() {
+        const loader = document.getElementById('mapLoader');
+        if (loader) loader.classList.remove('d-none');
+
+        if (navigator.geolocation) {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    if (loader) loader.classList.add('d-none');
+
+                    currentGeoData = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        accuracy: pos.coords.accuracy, // meters
+                        timestamp: pos.timestamp,
+                        speed: pos.coords.speed !== undefined ? pos.coords.speed : null,
+                        heading: pos.coords.heading !== undefined ? pos.coords.heading : null
+                    };
+
+                    myLat = currentGeoData.lat;
+                    myLng = currentGeoData.lng;
+
+                    updateUserLocationCoordinates(myLat, myLng, true, currentGeoData);
+                },
+                (err) => {
+                    if (loader) loader.classList.add('d-none');
+                    console.warn('[GEOLOCATION WARNING]', err.message);
+                    autoDetectIPLocation(true);
+                },
+                geoOptions
+            );
+        } else {
+            autoDetectIPLocation(true);
+        }
+    }
+
+    function stopLiveLocationTracking() {
+        if (watchId !== null && navigator.geolocation) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+    }
+
+    // Helper: update user location marker and broadcast
+    function updateUserLocationCoordinates(lat, lng, autoShare = false, geoDetails = null) {
+        myLat = lat;
+        myLng = lng;
+
+        try {
+            localStorage.setItem('sc_saved_lat', lat);
+            localStorage.setItem('sc_saved_lng', lng);
+        } catch (e) {}
+
+        if (map) {
+            map.setView([myLat, myLng], 16);
+
+            if (myMarker) map.removeLayer(myMarker);
+            let myIconHtml;
+            {% if current_user.profile and current_user.profile.avatar_filename %}
+                myIconHtml = `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
+            {% else %}
+                myIconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
+            {% endif %}
+
+            const myIcon = L.divIcon({
+                className: '',
+                html: myIconHtml,
+                iconSize: [44, 44],
+                iconAnchor: [22, 22]
+            });
+
+            const accuracyText = geoDetails && geoDetails.accuracy ? `<br><small class="text-muted">Accuracy: ±${Math.round(geoDetails.accuracy)}m</small>` : '';
+            myMarker = L.marker([myLat, myLng], { icon: myIcon }).addTo(map);
+            myMarker.bindPopup(`<b>You</b><br>Live GPS tracking.${accuracyText}`);
         }
 
-        const loader = document.getElementById('mapLoader');
-        loader.classList.remove('d-none');
-
-        navigator.geolocation.getCurrentPosition((pos) => {
-            myLat = pos.coords.latitude;
-            myLng = pos.coords.longitude;
-
+        if (autoShare) {
             const subject = document.getElementById('shareSubject').value;
             const exam = document.getElementById('shareExam').value;
-
             fetch('/nearby/api/share', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify({ lat: myLat, lng: myLng, subject, exam })
-            })
-                .then(r => r.json())
-                .then(data => {
-                    loader.classList.add('d-none');
-                    if (data.success) {
-                        updateSharingUI(true, data.data.expires_at);
-                        map.setView([data.data.lat, data.data.lng], 14);
-
-                        // Add My Marker
-                        if (myMarker) map.removeLayer(myMarker);
-                        let myIconHtml;
-                        {% if current_user.profile and current_user.profile.avatar_filename %}
-                            myIconHtml = `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
-                        {% else %}
-                            myIconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
-                        {% endif %}
-                        const myIcon = L.divIcon({
-                            className: '',
-                            html: myIconHtml,
-                            iconSize: [44, 44],
-                            iconAnchor: [22, 22]
-                        });
-                        myMarker = L.marker([data.data.lat, data.data.lng], { icon: myIcon }).addTo(map);
-                        myMarker.bindPopup("<b>You</b><br>Approximate broadcast location.");
-
-                        fetchNearbyStudents();
-                        showToast('Location shared successfully!', 'success');
-                    } else {
-                        showToast(data.message || 'Error sharing location.', 'danger');
-                    }
+                body: JSON.stringify({
+                    lat: myLat,
+                    lng: myLng,
+                    subject: subject,
+                    exam: exam,
+                    accuracy: geoDetails ? geoDetails.accuracy : null,
+                    speed: geoDetails ? geoDetails.speed : null,
+                    heading: geoDetails ? geoDetails.heading : null,
+                    timestamp: geoDetails ? geoDetails.timestamp : Date.now()
                 })
-                .catch(() => {
-                    loader.classList.add('d-none');
-                    showToast('Network error sharing location.', 'danger');
-                });
-        }, (err) => {
-            loader.classList.add('d-none');
-            showToast('Unable to retrieve location. Please allow location permissions.', 'warning');
-        }, { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 });
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    updateSharingUI(true, data.data.expires_at);
+                    fetchNearbyStudents();
+                }
+            });
+        }
+    }
+
+    // Share Location Button
+    document.getElementById('shareBtn').addEventListener('click', () => {
+        startLiveLocationTracking();
+        showToast('success', 'Location Shared', 'Live high-accuracy GPS tracking active');
     });
 
     // Stop Sharing Button
     document.getElementById('stopBtn').addEventListener('click', () => {
+        stopLiveLocationTracking();
         fetch('/nearby/api/stop', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
@@ -474,7 +610,7 @@
             .then(data => {
                 if (data.success) {
                     updateSharingUI(false);
-                    showToast('Location sharing stopped.', 'info');
+                    showToast('info', 'Sharing Stopped', 'Live location tracking stopped.');
                 }
             });
     });

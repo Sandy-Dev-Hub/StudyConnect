@@ -62,24 +62,14 @@ def delete_answer(answer_id, user_id):
     if was_accepted and question:
         question.is_resolved = False
 
-    # Remove points that were awarded for this answer
-    PointsLog.query.filter_by(
-        user_id=user_id,
-        reference_id=answer_id,
-        reason=PointsLog.REASON_ANSWER_POSTED
-    ).delete()
-
-    # Remove accepted answer points if applicable
+    # Remove the +10 acceptance bonus if this answer was accepted
     if was_accepted:
         PointsLog.query.filter_by(
             user_id=user_id,
             reference_id=answer_id,
             reason=PointsLog.REASON_ANSWER_ACCEPTED
         ).delete()
-        answer.author.add_points(-25)
-
-    # Remove the base answer points
-    answer.author.add_points(-10)
+        answer.author.add_points(-10)
 
     # Remove upvote/downvote points using a single aggregate query
     from sqlalchemy import func
@@ -174,6 +164,11 @@ def accept_answer(answer_id, user_id):
     """
     Accept an answer. Only the question owner can accept.
     Returns (answer, points_awarded, error_message).
+
+    Points logic:
+    - Posting an answer gives NO points.
+    - When accepted: answerer gets +10 points.
+    - When un-accepted: answerer loses -10 points.
     """
     answer = db.session.get(Answer, answer_id)
     if answer is None:
@@ -186,12 +181,12 @@ def accept_answer(answer_id, user_id):
     points_awarded = 0
 
     if answer.is_accepted:
-        # Un-accept
+        # Un-accept: remove the +10 acceptance bonus
         answer.is_accepted = False
         question.is_resolved = False
-        answer.author.add_points(-25)
-        _log_points(answer.author_id, -25, PointsLog.REASON_ACCEPTED_REMOVED, answer_id)
-        points_awarded = -25
+        answer.author.add_points(-10)
+        _log_points(answer.author_id, -10, PointsLog.REASON_ACCEPTED_REMOVED, answer_id)
+        points_awarded = -10
     else:
         # Remove any previously accepted answer on this question
         previously_accepted = Answer.query.filter_by(
@@ -199,22 +194,23 @@ def accept_answer(answer_id, user_id):
         ).first()
         if previously_accepted:
             previously_accepted.is_accepted = False
-            previously_accepted.author.add_points(-25)
-            _log_points(previously_accepted.author_id, -25, PointsLog.REASON_ACCEPTED_REMOVED,
+            previously_accepted.author.add_points(-10)
+            _log_points(previously_accepted.author_id, -10, PointsLog.REASON_ACCEPTED_REMOVED,
                         previously_accepted.id)
 
         answer.is_accepted = True
         question.is_resolved = True
-        answer.author.add_points(25)
-        _log_points(answer.author_id, 25, PointsLog.REASON_ANSWER_ACCEPTED, answer_id)
-        points_awarded = 25
+        answer.author.add_points(10)
+        _log_points(answer.author_id, 10, PointsLog.REASON_ANSWER_ACCEPTED, answer_id)
+        points_awarded = 10
+
         from app.notifications.services import create_notification
         create_notification(
             user_id=answer.author_id,
             sender_id=user_id,
             notification_type='accept',
             title="Answer Accepted",
-            message=f"Your answer on '{question.title[:40]}...' was accepted (+25 points)!",
+            message=f"Your answer on '{question.title[:40]}...' was accepted! (+10 points)",
             link_url=f"/questions/{question.id}"
         )
 

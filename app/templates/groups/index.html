@@ -20,10 +20,10 @@
         </div>
 
         <!-- Filters Bar -->
-        <div class="glass-card filter-bar mb-4">
-            <form method="GET" action="{{ url_for('groups.index') }}" class="row g-3 align-items-end" id="filter-form">
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Subject</label>
+        <div class="glass-card mb-4 p-3">
+            <form method="GET" action="{{ url_for('groups.index') }}" class="row g-3 justify-content-center align-items-end" id="filter-form">
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">SUBJECT</label>
                     <select name="subject" class="form-select glass-input" onchange="this.form.submit()">
                         <option value="">All Subjects</option>
                         {% for s in subject_tags %}
@@ -31,8 +31,8 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Exam</label>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">EXAM</label>
                     <select name="exam" class="form-select glass-input" onchange="this.form.submit()">
                         <option value="">All Exams</option>
                         {% for e in exam_tags %}
@@ -40,8 +40,8 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">View</label>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">VIEW</label>
                     <select name="filter" class="form-select glass-input" onchange="this.form.submit()">
                         <option value="active" {% if current_filter == 'active' %}selected{% endif %}>Recently Active</option>
                         <option value="suggested" {% if current_filter == 'suggested' %}selected{% endif %}>Suggested</option>
@@ -50,11 +50,13 @@
                         {% endif %}
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-muted">Search</label>
+                <div class="col-12 col-lg-3">
+                    <label class="form-label small text-muted fw-semibold">SEARCH</label>
                     <div class="input-group">
                         <input type="text" name="q" class="form-control glass-input" placeholder="Search communities..." value="{{ current_q }}">
-                        <button class="btn btn-glass" type="submit"><i class="bi bi-search"></i></button>
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
                     </div>
                 </div>
             </form>

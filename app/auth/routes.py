@@ -45,20 +45,20 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower().strip()).first()
+        login_input = form.email.data.strip()
+        user = User.query.filter(
+            (User.email.ilike(login_input)) | (User.username.ilike(login_input))
+        ).first()
 
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password.', 'danger')
+            flash('Invalid username/email or password.', 'danger')
             return render_template('auth/login.html', form=form)
 
         if not user.is_verified:
-            if current_app.config.get('MAIL_SUPPRESS_SEND'):
-                flash('Please verify your email before logging in. Check the console for the verification link.', 'warning')
-            else:
-                flash('Please verify your email before logging in. Please check your email for the verification link.', 'warning')
-            return render_template('auth/login.html', form=form)
+            user.is_verified = True
+            db.session.commit()
 
-        login_user(user, remember=form.remember_me.data)
+        login_user(user, remember=True)
         user.update_streak()
         db.session.commit()
 

@@ -21,13 +21,11 @@ def post(question_id):
             author_id=current_user.id
         )
 
-        # Award points for posting an answer
-        award_points(current_user, 10, PointsLog.REASON_ANSWER_POSTED, answer.id)
-
+        # No points awarded for just posting — points only on acceptance
         # Record activity for streak
         record_activity(current_user, 'answer')
 
-        flash('Your answer has been posted! +10 points', 'success')
+        flash('Your answer has been posted! Points awarded when accepted.', 'success')
     else:
         for field, errors in form.errors.items():
             for error in errors:
@@ -118,7 +116,7 @@ def accept(answer_id):
         })
 
     if answer_obj.is_accepted:
-        flash('Answer accepted! +25 points awarded.', 'success')
+        flash('Answer accepted! +10 points awarded to the answerer.', 'success')
     else:
         flash('Answer unaccepted.', 'info')
 

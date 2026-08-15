@@ -45,11 +45,19 @@ def index():
     if current_user.is_authenticated:
         my_group_ids = [m.group_id for m in GroupMember.query.filter_by(user_id=current_user.id).all()]
 
+    subject_tags = current_app.config.get('SUBJECT_TAGS') or [
+        'Mathematics', 'Physics', 'Chemistry', 'Biology',
+        'Computer Science', 'English', 'History', 'Other'
+    ]
+    exam_tags = current_app.config.get('EXAM_TAGS') or [
+        'SAT', 'ACT', 'AP', 'GRE', 'GMAT', 'NEET', 'JEE', 'Other'
+    ]
+
     return render_template('groups/index.html',
                            groups=groups,
                            my_group_ids=my_group_ids,
-                           subject_tags=current_app.config.get('SUBJECT_TAGS', []),
-                           exam_tags=current_app.config.get('EXAM_TAGS', []),
+                           subject_tags=subject_tags,
+                           exam_tags=exam_tags,
                            current_q=q,
                            current_subject=subject,
                            current_exam=exam,

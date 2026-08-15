@@ -8,9 +8,9 @@
             </span>
         </a>
 
-        <!-- Mobile Toggle -->
-        <button class="navbar-toggler border-0 flex-shrink-0 ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
+        <!-- Mobile Toggle (hamburger only) -->
+        <button class="navbar-toggler border-0 flex-shrink-0 ms-2" type="button" id="mobileMenuToggle" aria-label="Toggle navigation">
+            <i class="bi bi-list text-white fs-1"></i>
         </button>
 
         <!-- Nav Links & Layout (Center & Right) -->
@@ -207,3 +207,53 @@
         </div>
     </div>
 </nav>
+
+<!-- MOBILE FULLSCREEN OVERLAY MENU — must be OUTSIDE <nav> so backdrop-filter works -->
+<div class="mobile-menu-overlay d-lg-none" id="mobileNavCollapse">
+
+    <!-- Overlay Header: Logo + Close Button -->
+    <div class="mobile-menu-header">
+        <a class="mobile-menu-brand text-decoration-none" href="{{ url_for('main.home') }}">
+            <img src="{{ url_for('static', filename='img/logo/logo-icon.svg') }}" height="32" alt="StudyConnect">
+            <span class="ms-2 fw-800">
+                <span style="color:#fff;">Study</span><span style="color:#EA8528;">Connect</span>
+            </span>
+        </a>
+        <button class="mobile-close-btn" id="mobileMenuClose" aria-label="Close menu">
+            <i class="bi bi-x-lg"></i>
+            Close
+        </button>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="mobile-nav-links">
+        <a href="{{ url_for('main.home') }}" class="mobile-link {% if request.endpoint == 'main.home' %}active{% endif %}">Home</a>
+        <a href="{{ url_for('questions.ask') }}" class="mobile-link {% if request.endpoint == 'questions.ask' %}active{% endif %}">Ask a Question</a>
+        <a href="{{ url_for('questions.feed') }}" class="mobile-link {% if request.endpoint == 'questions.feed' %}active{% endif %}">Browse Q&amp;A</a>
+        <a href="{{ url_for('groups.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('groups.') %}active{% endif %}">Study Groups</a>
+        <a href="{{ url_for('leaderboard.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('leaderboard.') %}active{% endif %}">Leaderboard</a>
+        <a href="{{ url_for('productivity.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('productivity.') %}active{% endif %}">Focus Mode</a>
+        <a href="{{ url_for('nearby.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('nearby.') %}active{% endif %}">Nearby</a>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.profile', user_id=current_user.id) }}" class="mobile-link {% if request.endpoint == 'main.profile' %}active{% endif %}">Profile</a>
+        {% endif %}
+    </nav>
+
+    <!-- CTA Footer -->
+    <div class="mobile-menu-footer">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('questions.ask') }}" class="btn mobile-cta-btn w-100">Ask a Question</a>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('auth.logout') }}" class="mobile-footer-link fw-medium text-danger text-decoration-none">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </a>
+            </div>
+        {% else %}
+            <a href="{{ url_for('auth.register') }}" class="btn mobile-cta-btn w-100">Get Started</a>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('auth.login') }}" class="mobile-footer-link fw-medium text-decoration-none text-danger">Login</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+

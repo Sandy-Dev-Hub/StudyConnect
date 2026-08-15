@@ -36,7 +36,54 @@ document.addEventListener('DOMContentLoaded', () => {
     initCommunityDropdown();
     initCommunityBadgeSync();
     initNotifications();
+    initMobileMenu();
 });
+
+/* =================================================
+   MOBILE FULLSCREEN OVERLAY MENU
+   ================================================= */
+function initMobileMenu() {
+    const toggle    = document.getElementById('mobileMenuToggle');
+    const overlay   = document.getElementById('mobileNavCollapse');
+    const closeBtn  = document.getElementById('mobileMenuClose');
+    if (!toggle || !overlay) return;
+
+    let scrollY = 0;
+
+    function openMenu() {
+        // Save current scroll position before locking
+        scrollY = window.scrollY;
+        document.body.style.top = `-${scrollY}px`;
+        document.body.classList.add('mobile-menu-open');
+        overlay.classList.add('is-open');
+    }
+
+    function closeMenu() {
+        overlay.classList.remove('is-open');
+        document.body.classList.remove('mobile-menu-open');
+        // Restore scroll position
+        document.body.style.top = '';
+        window.scrollTo(0, scrollY);
+    }
+
+    // Hamburger toggles open/close
+    toggle.addEventListener('click', () => {
+        overlay.classList.contains('is-open') ? closeMenu() : openMenu();
+    });
+
+    // Close button inside overlay
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+
+    // Close on any nav link click
+    overlay.querySelectorAll('.mobile-link').forEach(link => {
+        link.addEventListener('click', closeMenu);
+    });
+
+    // Close on ESC key
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeMenu();
+    });
+}
 
 /* =================================================
    SCROLL ANIMATIONS (IntersectionObserver)
@@ -187,7 +234,7 @@ function initAcceptAnswer() {
                         }
                     });
 
-                    showToast('points', '+25 Points', 'Answer accepted!');
+                    showToast('points', '+10 Points', 'Answer accepted!');
                 } else {
                     btn.classList.remove('accepted');
                     if (icon) {
@@ -499,22 +546,46 @@ function initPasswordToggle() {
 /* =================================================
    TOAST NOTIFICATION SYSTEM
    ================================================= */
-function showToast(type, title, message, duration = 4000) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+function showToast(a, b, c, duration = 4000) {
+    let type = 'info';
+    let title = '';
+    let message = '';
 
-    const iconMap = {
-        success: 'bi-check-circle-fill toast-success',
-        points: 'bi-star-fill toast-points',
-        error: 'bi-exclamation-triangle-fill toast-error',
-        info: 'bi-info-circle-fill toast-info',
+    if (c !== undefined) {
+        type = a || 'info';
+        title = b || '';
+        message = c || '';
+    } else if (b !== undefined) {
+        message = a || '';
+        type = b || 'info';
+        title = type === 'success' ? 'Success' : (type === 'error' || type === 'danger' ? 'Error' : 'Notice');
+    } else {
+        message = a || '';
+        title = 'Notice';
+    }
+
+    if (type === 'danger') type = 'error';
+
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const iconClassMap = {
+        success: 'bi-check-circle-fill text-success',
+        points: 'bi-star-fill text-warning',
+        error: 'bi-exclamation-triangle-fill text-danger',
+        warning: 'bi-exclamation-circle-fill text-warning',
+        info: 'bi-info-circle-fill text-info',
     };
 
     const toast = document.createElement('div');
-    toast.className = 'toast-notification';
+    toast.className = `toast-notification toast-${type}`;
     toast.innerHTML = `
-        <div class="toast-icon ${iconMap[type] || iconMap.info}">
-            <i class="bi ${iconMap[type]?.split(' ')[0] || 'bi-info-circle-fill'}"></i>
+        <div class="toast-icon">
+            <i class="bi ${iconClassMap[type] || iconClassMap.info}"></i>
         </div>
         <div class="toast-body">
             <strong>${escapeHtml(title)}</strong>
@@ -619,8 +690,9 @@ function initCommunityBadgeSync() {
    UTILITY FUNCTIONS
    ================================================= */
 function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return String(text).replace(/[&<>"']/g, m => map[m]);
 }
 
 // Expose showToast globally for use by templates

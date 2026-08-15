@@ -78,13 +78,13 @@
                                 <button class="vote-btn vote-up {% if current_user.is_authenticated and answer.get_user_vote(current_user.id) == 1 %}voted{% endif %}"
                                         data-answer-id="{{ answer.id }}" data-value="1"
                                         {% if not current_user.is_authenticated %}disabled title="Sign in to vote"{% endif %}>
-                                    <i class="bi bi-caret-up-fill"></i>
+                                    <i class="bi bi-arrow-up"></i>
                                 </button>
                                 <span class="vote-score" id="score-{{ answer.id }}">{{ answer.score }}</span>
                                 <button class="vote-btn vote-down {% if current_user.is_authenticated and answer.get_user_vote(current_user.id) == -1 %}voted{% endif %}"
                                         data-answer-id="{{ answer.id }}" data-value="-1"
                                         {% if not current_user.is_authenticated %}disabled title="Sign in to vote"{% endif %}>
-                                    <i class="bi bi-caret-down-fill"></i>
+                                    <i class="bi bi-arrow-down"></i>
                                 </button>
 
                                 {% if current_user.is_authenticated and question.author_id == current_user.id %}
@@ -178,9 +178,9 @@
                         {{ answer_form.hidden_tag() }}
 
                         <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <label for="body" class="form-label">{{ answer_form.body.label.text }}</label>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="answer-preview-toggle">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="body" class="form-label mb-0">{{ answer_form.body.label.text }}</label>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-3" id="answer-preview-toggle">
                                     <i class="bi bi-eye me-1"></i>Preview
                                 </button>
                             </div>
@@ -244,16 +244,20 @@
                         <i class="bi bi-stars me-2 text-warning"></i>Points Guide
                     </h5>
                     <div class="points-guide-item">
-                        <span class="badge bg-success">+10</span>
+                        <span class="badge bg-secondary">+0</span>
                         <span>Post an answer</span>
                     </div>
                     <div class="points-guide-item">
-                        <span class="badge bg-warning text-dark">+25</span>
-                        <span>Answer accepted</span>
+                        <span class="badge bg-success">+10</span>
+                        <span>Answer accepted ✓</span>
                     </div>
                     <div class="points-guide-item">
                         <span class="badge bg-info">+5</span>
                         <span>Receive an upvote</span>
+                    </div>
+                    <div class="points-guide-item">
+                        <span class="badge" style="background:rgba(234,133,40,0.2);color:var(--amber);border:1px solid rgba(234,133,40,0.3);">TIP</span>
+                        <span class="small text-muted">Points only awarded when the asker accepts your answer</span>
                     </div>
                 </div>
             </div>

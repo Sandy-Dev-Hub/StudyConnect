@@ -40,10 +40,9 @@ class RegisterForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[
-        DataRequired(message='Email is required.'),
-        Email(message='Please enter a valid email address.')
-    ], render_kw={'placeholder': 'your@email.com', 'autocomplete': 'email'})
+    email = StringField('Email or Username', validators=[
+        DataRequired(message='Please enter your email or username.')
+    ], render_kw={'placeholder': 'your@email.com or username', 'autocomplete': 'username'})
 
     password = PasswordField('Password', validators=[
         DataRequired(message='Password is required.')

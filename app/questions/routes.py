@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, current_app
+from flask import render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
@@ -76,9 +76,18 @@ def detail(question_id):
         joinedload(Question.study_group)
     ).get_or_404(question_id)
 
-    # Increment view count
-    question.increment_views()
-    db.session.commit()
+    # Unique view counting — only count once per session per question
+    viewed_key = 'viewed_questions'
+    if viewed_key not in session:
+        session[viewed_key] = []
+    viewed_list = session[viewed_key]
+    if question_id not in viewed_list:
+        question.increment_views()
+        db.session.commit()
+        viewed_list.append(question_id)
+        # Keep session size manageable (store last 200 viewed)
+        session[viewed_key] = viewed_list[-200:]
+        session.modified = True
 
     from app.answers.forms import AnswerForm
     answer_form = AnswerForm()
