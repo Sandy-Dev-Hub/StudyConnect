@@ -422,13 +422,29 @@ This release overhauls the Nearby Students feature to improve accuracy, reliabil
 
 ## Screenshots
 
-### Nearby Study Discovery — Mobile
-![Nearby Students - Mobile](docs/screenshots/nearby-mobile.png)
-*Location sharing active on a phone, with an accurate GPS fix.*
+### Home & Community Overview
+![Home Overview](docs/screenshots/desktop-landing.png)
 
-### Nearby Study Discovery — Desktop
-![Nearby Students - Desktop](docs/screenshots/nearby-desktop.png)
-*Nearby Students discovery view on desktop.*
+### Questions Feed & Detail View
+![Questions](docs/screenshots/desktop-questions.png)
+
+### Study Groups & Collaborative Rooms
+![Groups](docs/screenshots/desktop-groups.png)
+
+### Nearby Study Discovery
+![Nearby](docs/screenshots/desktop-nearby.png)
+
+### Productivity Dashboard & Personal Pomodoro Focus
+![Productivity](docs/screenshots/desktop-productivity.png)
+
+### Mobile Responsive Viewport
+![Mobile View](docs/screenshots/mobile-landing.png)
+
+> To regenerate screenshots across all pages for mobile and desktop viewports, run:
+> ```bash
+> python scripts/capture_screenshots.py
+> ```
+> The script requires a running local server (`python run.py`) and a dev install of Playwright (`pip install playwright && playwright install chromium`).
 
 ---
 

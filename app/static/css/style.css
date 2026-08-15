@@ -3826,27 +3826,7 @@ table {
   }
 }
 
-/* ---- Phone: Filter Bar horizontal scroll ---- */
-@media (max-width: 767.98px) {
-  .filter-bar { overflow-x: auto; padding-bottom: 0.5rem; }
-  .filter-bar .row {
-    flex-wrap: nowrap !important;
-    gap: 0.75rem !important;
-    min-width: max-content;
-    align-items: flex-end !important;
-  }
-  .filter-bar .col-md-3 {
-    min-width: 160px !important;
-    flex: 0 0 auto !important;
-    width: auto !important;
-    max-width: none !important;
-  }
-  .filter-bar .form-select,
-  .filter-bar .form-control {
-    min-width: 140px;
-    font-size: 0.82rem !important;
-  }
-}
+
 
 /* ---- Phone: Write Answer ---- */
 @media (max-width: 575.98px) {
@@ -3915,7 +3895,7 @@ table {
 
 /* ---- Leaderboard phone ---- */
 @media (max-width: 575.98px) {
-  .leaderboard-stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .leaderboard-stats-grid { grid-template-columns: 1fr; gap: 12px; }
   .podium-card { width: 100% !important; min-height: auto !important; }
 }
 
