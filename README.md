@@ -12,6 +12,8 @@
 ![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-EA8528?style=for-the-badge)
 
+**Version: v1.1.0**
+
 **A gamified peer-learning community, collaborative study platform, and real-time networking ecosystem built with Flask.**
 Ask doubts, share knowledge, earn points, climb the leaderboard, form collaborative study groups, and discover peers studying near you.
 
@@ -400,6 +402,33 @@ App runs locally at `http://localhost:5000`
 - **Real-Time Gevent Workers:** Production `gunicorn_config.py` configured with Gevent WebSocket workers for seamless Socket.IO WebSocket handling.
 - **Health Diagnostics:** Built-in `GET /api/health` endpoint monitoring live DB, Redis, and Socket.IO status.
 - **Deployment Guide:** Comprehensive deployment documentation in `DEPLOYMENT.md`.
+
+---
+
+## What's New: v1.1.0 (Nearby Students Update)
+
+*August 15, 2026*
+
+This release overhauls the Nearby Students feature to improve accuracy, reliability, and the user experience:
+
+- Removed the IP-based location fallback — Nearby Students now relies on device GPS only, never an IP-based location guess.
+- Added GPS accuracy validation (rejects readings worse than 1000m) on both frontend and backend, with Null Island and coordinate-range checks server-side.
+- Fixed GPS watching so a single poor-accuracy reading no longer stops location tracking — the app keeps listening for a better fix instead of giving up.
+- Added a non-alarming "Searching for your location…" state while waiting for an accurate GPS fix, replacing the previous error-style banner.
+- Throttled location update requests to the server to prevent hitting rate limits during normal use.
+- Fixed the GPS status banner layout so it displays fully on both mobile and desktop screen widths without being clipped.
+
+---
+
+## Screenshots
+
+### Nearby Study Discovery — Mobile
+![Nearby Students - Mobile](docs/screenshots/nearby-mobile.png)
+*Location sharing active on a phone, with an accurate GPS fix.*
+
+### Nearby Study Discovery — Desktop
+![Nearby Students - Desktop](docs/screenshots/nearby-desktop.png)
+*Nearby Students discovery view on desktop.*
 
 ---
 
