@@ -32,33 +32,9 @@ class AnalyticsHooks:
 
 class LocationService:
     """Service handling secure location sharing, coordinate jitter, and discovery feeds."""
-    @staticmethod
-    def resolve_ip_location(ip_address=None):
-        """Fetch IP Geolocation via free ipapi REST API."""
-        import urllib.request
-        import json
-
-        try:
-            url = "https://ipapi.co/json/" if not ip_address or ip_address in ('127.0.0.1', 'localhost', '::1') else f"https://ipapi.co/{ip_address}/json/"
-            req = urllib.request.Request(url, headers={'User-Agent': 'StudyConnect/1.0'})
-            with urllib.request.urlopen(req, timeout=4) as resp:
-                if resp.status == 200:
-                    data = json.loads(resp.read().decode('utf-8'))
-                    if 'latitude' in data and 'longitude' in data:
-                        return {
-                            'lat': float(data['latitude']),
-                            'lng': float(data['longitude']),
-                            'city': data.get('city', ''),
-                            'region': data.get('region', ''),
-                            'country': data.get('country_name', '')
-                        }
-        except Exception as e:
-            if has_request_context():
-                current_app.logger.warning(f"[NEARBY IP GEO] Failed to resolve IP location: {e}")
-        return None
 
     @staticmethod
-    def share_location(user_id, lat, lng, subject_tag, exam_tag):
+    def share_location(user_id, lat, lng, subject_tag, exam_tag, accuracy=None):
         # Validate coordinate boundaries
         try:
             lat = float(lat)
@@ -68,6 +44,21 @@ class LocationService:
             
         if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lng <= 180.0):
             raise ValueError("Coordinates out of valid geographical boundaries.")
+
+        # Reject Null Island (0.0, 0.0)
+        if abs(lat) < 1e-5 and abs(lng) < 1e-5:
+            raise ValueError("Invalid GPS coordinates (0.0, 0.0).")
+
+        # Reject inaccurate coordinates (> 1000m)
+        if accuracy is not None:
+            acc_val = None
+            try:
+                acc_val = float(accuracy)
+            except (ValueError, TypeError):
+                pass
+
+            if acc_val is not None and acc_val > 1000.0:
+                raise ValueError(f"Location accuracy is too low (±{round(acc_val)}m). High-accuracy GPS (<1000m) required.")
 
         # High-precision coordinates (6 decimal places ≈ 0.1m accuracy)
         precise_lat = round(lat, 6)
@@ -81,14 +72,15 @@ class LocationService:
             'expires_at': expires_at.isoformat(),
             'last_seen': now.isoformat(),
             'subject': subject_tag or 'General',
-            'exam': exam_tag or 'Any'
+            'exam': exam_tag or 'Any',
+            'accuracy': float(accuracy) if accuracy is not None else None
         }
 
         get_storage().set(user_id, precise_lat, precise_lng, metadata)
         AnalyticsHooks.increment('active_shares')
         AnalyticsHooks.increment('subjects', subject_tag or 'General')
 
-        current_app.logger.info(f"[NEARBY LOG] action=share_started user_id={user_id} subject={subject_tag} exam={exam_tag}")
+        current_app.logger.info(f"[NEARBY LOG] action=share_started user_id={user_id} subject={subject_tag} exam={exam_tag} accuracy={accuracy}")
         
         socketio.emit('location_started', {
             'user_id': user_id,

@@ -3,7 +3,7 @@
 
 {% block content %}
 <section class="content-section">
-    <div class="container">
+    <div class="w-100 px-4 px-xl-5">
         <!-- Header -->
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
             <h1 class="page-title">
@@ -23,7 +23,7 @@
 
         <!-- Filter Section -->
         <div class="glass-card mb-4 p-3">
-            <form method="GET" action="{{ url_for('questions.feed') }}" class="row g-3 justify-content-center align-items-end" id="filter-form">
+            <form method="GET" action="{{ url_for('questions.feed') }}" class="row g-3 justify-content-center align-items-end filter-bar" id="filter-form">
                 <div class="col-12 col-lg-3">
                     <label class="form-label small text-muted fw-semibold">SUBJECT</label>
                     <select name="subject" class="form-select glass-input" onchange="this.form.submit()">

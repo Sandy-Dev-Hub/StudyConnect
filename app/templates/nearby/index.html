@@ -91,6 +91,17 @@
     .leaflet-popup-tip {
         background: #1a1a19;
     }
+
+    /* ── GPS Searching state dot animation ─────────────────── */
+    @keyframes searching-pulse {
+        0%, 100% { opacity: 1;   transform: scale(1); }
+        50%       { opacity: 0.4; transform: scale(0.75); }
+    }
+    .dot-searching {
+        animation: searching-pulse 1.4s ease-in-out infinite;
+        background-color: #6ea8fe !important; /* calm blue — not alarm red/yellow */
+        box-shadow: 0 0 8px rgba(110, 168, 254, 0.55) !important;
+    }
 </style>
 {% endblock %}
 
@@ -272,70 +283,108 @@
         let map = null;
         let myMarker = null;
         let peerMarkers = {};
+        let hasCenteredMap = false;
         let myLat = {{ shared_lat if shared_lat else 'null' }};
         let myLng = {{ shared_lng if shared_lng else 'null' }};
         let isSharing = {{ 'true' if is_sharing else 'false' }};
         let expiresAt = {% if expires_at %}'{{ expires_at }}'{% else %}null{% endif %};
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const currentUserId = {{ current_user.id }};
+        const MAX_ACCURACY_METERS = 1000;
 
-        // 100% Automated IP Geolocation resolution
-        function autoDetectIPLocation(autoShare = false) {
-            const loader = document.getElementById('mapLoader');
-            if (loader) loader.classList.remove('d-none');
+        const geoOptions = {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 10000
+        };
 
-            // 1. Try ip-api.com
-            fetch('https://ip-api.com/json/?fields=status,country,regionName,city,lat,lon,query')
-                .then(r => r.json())
-                .then(data => {
-                    if (data && data.status === 'success' && data.lat && data.lon) {
-                        myLat = parseFloat(data.lat);
-                        myLng = parseFloat(data.lon);
-                        if (loader) loader.classList.add('d-none');
-                        updateUserLocationCoordinates(myLat, myLng, autoShare);
-                        showToast('info', 'Location Auto-Detected', `IP Location: ${data.city || data.regionName || 'Detected'}`);
-                    } else {
-                        throw new Error('ip-api fallback');
-                    }
-                })
-                .catch(() => {
-                    // 2. Fallback to ipapi.co
-                    fetch('https://ipapi.co/json/')
-                        .then(r => r.json())
-                        .then(data => {
-                            if (loader) loader.classList.add('d-none');
-                            if (data && data.latitude && data.longitude) {
-                                myLat = parseFloat(data.latitude);
-                                myLng = parseFloat(data.longitude);
-                                updateUserLocationCoordinates(myLat, myLng, autoShare);
-                                showToast('info', 'Location Auto-Detected', `IP Location: ${data.city || 'Detected'}`);
-                            } else {
-                                // 3. Fallback to server endpoint /nearby/api/ip-location
-                                fetch('/nearby/api/ip-location')
-                                    .then(r => r.json())
-                                    .then(res => {
-                                        if (res.success && res.location) {
-                                            myLat = res.location.lat;
-                                            myLng = res.location.lng;
-                                            updateUserLocationCoordinates(myLat, myLng, autoShare);
-                                            showToast('info', 'Location Auto-Detected', `IP Location: ${res.location.city || 'Detected'}`);
-                                        }
-                                    });
-                            }
-                        })
-                        .catch(() => {
-                            if (loader) loader.classList.add('d-none');
-                        });
-                });
+        let watchId = null;
+
+        // ── GPS three-state machine ────────────────────────────────────────
+        // States: 'idle' | 'searching' | 'accurate'
+        // 'searching' is shown while watchPosition is running but no accurate
+        // fix has arrived yet.  'accurate' mirrors the existing isSharing=true
+        // success state.  'idle' = user hasn't clicked Share or has stopped.
+        let gpsState           = 'idle';
+        let searchingStartedAt = 0;     // epoch-ms when searching began
+        let stuckHintShown     = false; // prevents the 20-s hint firing twice
+        let stuckHintTimer     = null;  // setTimeout handle
+        const STUCK_HINT_MS    = 20000; // 20 s before showing desktop hint
+
+        // --- Share throttle state ---
+        // Prevents hitting /api/share on every GPS jitter callback.
+        // Network call fires when EITHER 6 s have elapsed OR the device
+        // has moved >= 15 m from the last position sent to the server.
+        let lastShareSentAt = 0;   // epoch-ms of the last successful POST
+        let lastSentLat    = null; // lat of the last position sent
+        let lastSentLng    = null; // lng of the last position sent
+        const SHARE_INTERVAL_MS = 6000;   // minimum ms between network calls
+        const SHARE_DISTANCE_M  = 15;     // movement threshold in metres
+
+        // Fast great-circle approximation (equirectangular) — good to ~0.5 % at city-scale distances.
+        function approxDistanceMetres(lat1, lng1, lat2, lng2) {
+            const R = 6371000; // Earth radius in metres
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const mLat = (lat1 + lat2) / 2 * Math.PI / 180;
+            return Math.sqrt(dLat * dLat + (Math.cos(mLat) * dLng) * (Math.cos(mLat) * dLng)) * R;
+        }
+
+        function getMyAvatarMarkerHtml() {
+            {% if current_user.profile and current_user.profile.avatar_filename %}
+                return `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
+            {% else %}
+                return `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
+            {% endif %}
         }
 
         // Initialize Leaflet Map
         function initMap() {
-            let initialLat = isSharing && myLat !== null ? myLat : 12.9716;
-            let initialLng = isSharing && myLng !== null ? myLng : 80.2450;
+            const hasInitialLocation = isSharing && myLat !== null && myLng !== null;
+            const initialLat = hasInitialLocation ? myLat : 20.0;
+            const initialLng = hasInitialLocation ? myLng : 0.0;
+            const initialZoom = hasInitialLocation ? 15 : 2;
 
-            map = L.map('nearbyMap', { zoomControl: false }).setView([initialLat, initialLng], 13);
+            map = L.map('nearbyMap', {
+                zoomControl: false,
+                fadeAnimation: true,
+                zoomAnimation: true
+            }).setView([initialLat, initialLng], initialZoom);
+
             L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Custom Recenter Control
+            const RecenterControl = L.Control.extend({
+                options: { position: 'bottomright' },
+                onAdd: function() {
+                    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                    const btn = L.DomUtil.create('a', '', container);
+                    btn.href = '#';
+                    btn.title = 'Center on My Location';
+                    btn.role = 'button';
+                    btn.style.width = '30px';
+                    btn.style.height = '30px';
+                    btn.style.lineHeight = '30px';
+                    btn.style.textAlign = 'center';
+                    btn.style.backgroundColor = '#1a1a19';
+                    btn.style.color = '#EA8528';
+                    btn.style.borderColor = 'rgba(255,255,255,0.2)';
+                    btn.innerHTML = '<i class="bi bi-crosshair"></i>';
+
+                    L.DomEvent.disableClickPropagation(container);
+                    L.DomEvent.on(btn, 'click', (e) => {
+                        L.DomEvent.preventDefault(e);
+                        if (myLat !== null && myLng !== null && isSharing) {
+                            map.setView([myLat, myLng], 16, { animate: true });
+                        } else {
+                            showToast('info', 'Location Needed', 'Please click "Share Location" to acquire high-accuracy GPS position.');
+                        }
+                    });
+                    return container;
+                }
+            });
+            map.addControl(new RecenterControl());
 
             // CartoDB Dark Matter Tiles
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -344,33 +393,45 @@
                 maxZoom: 19
             }).addTo(map);
 
-            if (isSharing && myLat !== null && myLng !== null) {
-                let myIconHtml;
-                {% if current_user.profile and current_user.profile.avatar_filename %}
-                    myIconHtml = `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
-                {% else %}
-                    myIconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
-                {% endif %}
+            // Smooth map sizing on mobile & desktop
+            setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+            window.addEventListener('resize', () => {
+                if (map) map.invalidateSize();
+            });
+
+            if (hasInitialLocation) {
+                hasCenteredMap = true;
+                updateUserMarker(myLat, myLng, null);
+                fetchNearbyStudents();
+                startLiveLocationTracking();
+            }
+
+            updateSharingUI(isSharing, expiresAt);
+        }
+        initMap();
+
+        function updateUserMarker(lat, lng, accuracy = null) {
+            if (!map) return;
+
+            const accuracyText = accuracy ? `<br><small class="text-muted">Accuracy: ±${Math.round(accuracy)}m</small>` : '';
+            const popupContent = `<b>You</b><br>Live GPS Location.${accuracyText}`;
+
+            if (!myMarker) {
                 const myIcon = L.divIcon({
                     className: '',
-                    html: myIconHtml,
+                    html: getMyAvatarMarkerHtml(),
                     iconSize: [44, 44],
                     iconAnchor: [22, 22]
                 });
-                myMarker = L.marker([myLat, myLng], { icon: myIcon }).addTo(map);
-                myMarker.bindPopup("<b>You</b><br>Approximate broadcast location.");
+                myMarker = L.marker([lat, lng], { icon: myIcon }).addTo(map);
+                myMarker.bindPopup(popupContent);
             } else {
-                // Auto-detect real-time IP location on first load
-                autoDetectIPLocation(false);
-            }
-
-            // Sync UI state immediately on map init
-            updateSharingUI(isSharing, expiresAt);
-            if (isSharing) {
-                fetchNearbyStudents();
+                myMarker.setLatLng([lat, lng]);
+                if (myMarker.getPopup()) {
+                    myMarker.getPopup().setContent(popupContent);
+                }
             }
         }
-        initMap();
 
         // SocketIO Listeners
         const socket = window.getAppSocket ? window.getAppSocket() : (window.socket || (typeof io !== 'undefined' ? io() : null));
@@ -380,7 +441,7 @@
 
             socket.off('location_started');
             socket.on('location_started', (data) => {
-                if (isSharing && data.user_id !== {{ current_user.id }}) {
+                if (isSharing && data.user_id !== currentUserId) {
                     fetchNearbyStudents();
                 }
             });
@@ -414,20 +475,101 @@
             });
         }
 
-    function updateSharingUI(sharing, expiresAt = null) {
-        isSharing = sharing;
-        const dot = document.getElementById('statusDot');
-        const title = document.getElementById('statusTitle');
-        const sub = document.getElementById('statusSubtitle');
-        const shareBtn = document.getElementById('shareBtn');
-        const stopBtn = document.getElementById('stopBtn');
+        function updateSharingUI(sharing, expiresAt = null) {
+            isSharing = sharing;
+            const dot = document.getElementById('statusDot');
+            const title = document.getElementById('statusTitle');
+            const sub = document.getElementById('statusSubtitle');
+            const shareBtn = document.getElementById('shareBtn');
+            const stopBtn = document.getElementById('stopBtn');
 
-        if (sharing) {
-            dot.className = 'd-inline-block rounded-circle bg-success me-2';
-            dot.style.boxShadow = '0 0 10px #28a745';
-            title.textContent = 'Location Sharing Active';
-            sub.textContent = expiresAt ? `Broadcasting approximate presence. Auto-expires at ${new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` : 'Broadcasting presence.';
-            
+            if (sharing) {
+                // ── State 2: Accurate / active ──────────────────────────
+                dot.className = 'd-inline-block rounded-circle bg-success me-2';
+                dot.style.boxShadow = '0 0 10px #28a745';
+                title.textContent = 'Location Sharing Active';
+                sub.textContent = expiresAt ? `Broadcasting GPS coordinates. Auto-expires at ${new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` : 'Broadcasting GPS presence.';
+
+                if (shareBtn) {
+                    shareBtn.classList.add('d-none');
+                    shareBtn.style.setProperty('display', 'none', 'important');
+                }
+                if (stopBtn) {
+                    stopBtn.classList.remove('d-none');
+                    stopBtn.style.setProperty('display', 'inline-flex', 'important');
+                }
+            } else {
+                // ── State 1 / idle: not sharing ─────────────────────────
+                // Also cancel any in-flight searching timers.
+                _cancelStuckHintTimer();
+                stuckHintShown = false;
+                gpsState = 'idle';
+
+                dot.className = 'd-inline-block rounded-circle bg-secondary me-2';
+                dot.style.boxShadow = 'none';
+                title.textContent = 'Location Sharing Offline';
+                sub.textContent = 'Opt-in to share high-accuracy GPS coordinates and discover peers.';
+
+                if (shareBtn) {
+                    shareBtn.classList.remove('d-none');
+                    shareBtn.style.setProperty('display', 'inline-flex', 'important');
+                }
+                if (stopBtn) {
+                    stopBtn.classList.add('d-none');
+                    stopBtn.style.setProperty('display', 'none', 'important');
+                }
+
+                if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
+                clearPeerMarkers();
+                document.getElementById('studentsList').innerHTML = `
+                    <div class="text-center text-muted py-5 my-auto">
+                        <i class="bi bi-geo-alt fs-1 d-block mb-3 text-secondary"></i>
+                        <h6 class="text-light">No Active Peers Found</h6>
+                        <p class="small text-muted mb-0">Click "Share Location" to broadcast your presence and see who is studying nearby!</p>
+                    </div>`;
+                document.getElementById('studentsCountBadge').textContent = '0';
+            }
+        }
+
+        function clearPeerMarkers() {
+            for (let uid in peerMarkers) {
+                map.removeLayer(peerMarkers[uid]);
+            }
+            peerMarkers = {};
+        }
+
+        // ── setGpsSearchingState ───────────────────────────────────────
+        // Puts the control-bar into the neutral “Searching” state.
+        // Called immediately when the watch starts, and on every accuracy-
+        // rejection callback.  Does NOT stop watchPosition or change isSharing.
+        // accuracyHint: number|null — if a reading was received but rejected,
+        // show its accuracy so the user sees progress, not a black box.
+        function setGpsSearchingState(accuracyHint) {
+            gpsState = 'searching';
+
+            const dot   = document.getElementById('statusDot');
+            const title = document.getElementById('statusTitle');
+            const sub   = document.getElementById('statusSubtitle');
+
+            if (dot) {
+                dot.className = 'd-inline-block rounded-circle me-2 dot-searching';
+                dot.style.boxShadow = ''; // let CSS class control it
+            }
+            if (title) title.textContent = 'Searching for your location…';
+            if (sub) {
+                if (accuracyHint !== null && accuracyHint !== undefined) {
+                    sub.textContent =
+                        `Still refining your location (currently ±${Math.round(accuracyHint)} m, ` +
+                        `need ±1 000 m or better)…`;
+                } else {
+                    sub.textContent =
+                        'Waiting for a precise GPS fix. Keep the page open—this usually takes a few seconds.';
+                }
+            }
+
+            // Show Stop button (user can cancel while searching), hide Share button.
+            const shareBtn = document.getElementById('shareBtn');
+            const stopBtn  = document.getElementById('stopBtn');
             if (shareBtn) {
                 shareBtn.classList.add('d-none');
                 shareBtn.style.setProperty('display', 'none', 'important');
@@ -436,62 +578,43 @@
                 stopBtn.classList.remove('d-none');
                 stopBtn.style.setProperty('display', 'inline-flex', 'important');
             }
-        } else {
-            dot.className = 'd-inline-block rounded-circle bg-secondary me-2';
-            dot.style.boxShadow = 'none';
-            title.textContent = 'Location Sharing Offline';
-            sub.textContent = 'Opt-in to share approximate coordinates and discover peers.';
 
-            if (shareBtn) {
-                shareBtn.classList.remove('d-none');
-                shareBtn.style.setProperty('display', 'inline-flex', 'important');
+            // Start the 20-second “stuck” hint timer only once per search session.
+            if (!stuckHintShown && stuckHintTimer === null) {
+                searchingStartedAt = Date.now();
+                stuckHintTimer = setTimeout(() => {
+                    // Only escalate if we’re still searching — not if an accurate
+                    // fix already arrived and moved us to the 'accurate' state.
+                    if (gpsState !== 'searching') return;
+                    stuckHintShown = true;
+                    const subEl = document.getElementById('statusSubtitle');
+                    if (subEl) {
+                        subEl.textContent =
+                            'Still searching… If you’re on a laptop or desktop, GPS accuracy is often limited. ' +
+                            'For the best experience, try StudyConnect on your phone with Wi‑Fi and Location Services turned on.';
+                    }
+                }, STUCK_HINT_MS);
             }
-            if (stopBtn) {
-                stopBtn.classList.add('d-none');
-                stopBtn.style.setProperty('display', 'none', 'important');
+        }
+
+        function _cancelStuckHintTimer() {
+            if (stuckHintTimer !== null) {
+                clearTimeout(stuckHintTimer);
+                stuckHintTimer = null;
+            }
+        }
+
+        function startLiveLocationTracking() {
+            const loader = document.getElementById('mapLoader');
+            if (loader) loader.classList.remove('d-none');
+
+            if (!navigator.geolocation) {
+                if (loader) loader.classList.add('d-none');
+                showToast('danger', 'Geolocation Error', 'Geolocation is not supported by your browser.');
+                updateSharingUI(false);
+                return;
             }
 
-            if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
-            clearPeerMarkers();
-            document.getElementById('studentsList').innerHTML = `
-                <div class="text-center text-muted py-5 my-auto">
-                    <i class="bi bi-geo-alt fs-1 d-block mb-3 text-secondary"></i>
-                    <h6 class="text-light">No Active Peers Found</h6>
-                    <p class="small text-muted mb-0">Click "Share Location" to broadcast your presence and see who is studying nearby!</p>
-                </div>`;
-            document.getElementById('studentsCountBadge').textContent = '0';
-        }
-    }
-
-    function clearPeerMarkers() {
-        for (let uid in peerMarkers) {
-            map.removeLayer(peerMarkers[uid]);
-        }
-        peerMarkers = {};
-    }
-
-    let watchId = null;
-    let currentGeoData = {
-        lat: null,
-        lng: null,
-        accuracy: null,
-        timestamp: null,
-        speed: null,
-        heading: null
-    };
-
-    const geoOptions = {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000
-    };
-
-    // Live location tracking using watchPosition()
-    function startLiveLocationTracking() {
-        const loader = document.getElementById('mapLoader');
-        if (loader) loader.classList.remove('d-none');
-
-        if (navigator.geolocation) {
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
             }
@@ -500,332 +623,364 @@
                 (pos) => {
                     if (loader) loader.classList.add('d-none');
 
-                    currentGeoData = {
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        accuracy: pos.coords.accuracy, // meters
-                        timestamp: pos.timestamp,
-                        speed: pos.coords.speed !== undefined ? pos.coords.speed : null,
-                        heading: pos.coords.heading !== undefined ? pos.coords.heading : null
-                    };
+                    const accuracy = pos.coords.accuracy;
 
-                    myLat = currentGeoData.lat;
-                    myLng = currentGeoData.lng;
+                    // Reject inaccurate GPS positions (> 1000m radius error)
+                    // Do NOT call clearWatch() here — keep the watch alive so the
+                    // device can improve its fix on a subsequent callback.
+                    if (accuracy && accuracy > MAX_ACCURACY_METERS) {
+                        // Show a calm "still searching" message, not an alarm.
+                        setGpsSearchingState(accuracy);
+                        return; // discard this reading; watch continues running
+                    }
 
-                    updateUserLocationCoordinates(myLat, myLng, true, currentGeoData);
+                    // ── Accurate fix arrived ──────────────────────────────
+                    // Cancel the stuck-hint timer and lock in the accurate state.
+                    _cancelStuckHintTimer();
+                    stuckHintShown = false;
+                    gpsState = 'accurate';
+
+                    myLat = pos.coords.latitude;
+                    myLng = pos.coords.longitude;
+
+                    // Initial map centering ONCE on first valid GPS fix
+                    if (!hasCenteredMap && map) {
+                        map.setView([myLat, myLng], 15, { animate: true });
+                        hasCenteredMap = true;
+                    }
+
+                    // Always update the local marker — never throttle the visual.
+                    updateUserMarker(myLat, myLng, accuracy);
+
+                    // Throttle the network call: send only if ≥6 s have elapsed
+                    // OR the device has moved ≥15 m since the last sent position.
+                    const now = Date.now();
+                    const elapsed = now - lastShareSentAt;
+                    const moved   = (lastSentLat !== null)
+                        ? approxDistanceMetres(lastSentLat, lastSentLng, myLat, myLng)
+                        : Infinity; // always send the very first reading
+
+                    if (elapsed >= SHARE_INTERVAL_MS || moved >= SHARE_DISTANCE_M) {
+                        sendShareToServer(myLat, myLng, accuracy);
+                    }
                 },
                 (err) => {
                     if (loader) loader.classList.add('d-none');
-                    console.warn('[GEOLOCATION WARNING]', err.message);
-                    autoDetectIPLocation(true);
+                    console.warn('[GEOLOCATION ERROR]', err.code, err.message);
+
+                    if (err.code === err.PERMISSION_DENIED) {
+                        // Permission denied is a permanent, terminal error — stop sharing.
+                        showToast('danger', 'Location Denied', 'Location permission was denied. Please allow location access in your browser settings.');
+                        updateSharingUI(false);
+                        stopLiveLocationTracking();
+                    } else {
+                        // POSITION_UNAVAILABLE or TIMEOUT are transient — keep the watch alive.
+                        let errMsg = 'GPS position temporarily unavailable. Retrying…';
+                        if (err.code === err.TIMEOUT) {
+                            errMsg = 'GPS request timed out. Retrying…';
+                        }
+                        const sub = document.getElementById('statusSubtitle');
+                        if (sub) sub.textContent = errMsg;
+                        showToast('warning', 'Location Unavailable', errMsg);
+                        // Do NOT call stopLiveLocationTracking() — watch stays active.
+                    }
                 },
                 geoOptions
             );
-        } else {
-            autoDetectIPLocation(true);
-        }
-    }
 
-    function stopLiveLocationTracking() {
-        if (watchId !== null && navigator.geolocation) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-        }
-    }
-
-    // Helper: update user location marker and broadcast
-    function updateUserLocationCoordinates(lat, lng, autoShare = false, geoDetails = null) {
-        myLat = lat;
-        myLng = lng;
-
-        try {
-            localStorage.setItem('sc_saved_lat', lat);
-            localStorage.setItem('sc_saved_lng', lng);
-        } catch (e) {}
-
-        if (map) {
-            map.setView([myLat, myLng], 16);
-
-            if (myMarker) map.removeLayer(myMarker);
-            let myIconHtml;
-            {% if current_user.profile and current_user.profile.avatar_filename %}
-                myIconHtml = `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
-            {% else %}
-                myIconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
-            {% endif %}
-
-            const myIcon = L.divIcon({
-                className: '',
-                html: myIconHtml,
-                iconSize: [44, 44],
-                iconAnchor: [22, 22]
-            });
-
-            const accuracyText = geoDetails && geoDetails.accuracy ? `<br><small class="text-muted">Accuracy: ±${Math.round(geoDetails.accuracy)}m</small>` : '';
-            myMarker = L.marker([myLat, myLng], { icon: myIcon }).addTo(map);
-            myMarker.bindPopup(`<b>You</b><br>Live GPS tracking.${accuracyText}`);
+            // Show the searching state immediately so the user sees progress,
+            // not a blank control bar, while we wait for the first GPS fix.
+            setGpsSearchingState(null);
         }
 
-        if (autoShare) {
+        function stopLiveLocationTracking() {
+            _cancelStuckHintTimer();
+            stuckHintShown = false;
+            gpsState = 'idle';
+            if (watchId !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+        }
+
+        function sendShareToServer(lat, lng, accuracy = null) {
             const subject = document.getElementById('shareSubject').value;
             const exam = document.getElementById('shareExam').value;
+
             fetch('/nearby/api/share', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify({
-                    lat: myLat,
-                    lng: myLng,
+                    lat: lat,
+                    lng: lng,
                     subject: subject,
                     exam: exam,
-                    accuracy: geoDetails ? geoDetails.accuracy : null,
-                    speed: geoDetails ? geoDetails.speed : null,
-                    heading: geoDetails ? geoDetails.heading : null,
-                    timestamp: geoDetails ? geoDetails.timestamp : Date.now()
+                    accuracy: accuracy
                 })
             })
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
+                    // Record the time and position of this successful share
+                    // so the throttle can correctly gate the next callback.
+                    lastShareSentAt = Date.now();
+                    lastSentLat     = lat;
+                    lastSentLng     = lng;
                     updateSharingUI(true, data.data.expires_at);
                     fetchNearbyStudents();
-                }
-            });
-        }
-    }
-
-    // Share Location Button
-    document.getElementById('shareBtn').addEventListener('click', () => {
-        startLiveLocationTracking();
-        showToast('success', 'Location Shared', 'Live high-accuracy GPS tracking active');
-    });
-
-    // Stop Sharing Button
-    document.getElementById('stopBtn').addEventListener('click', () => {
-        stopLiveLocationTracking();
-        fetch('/nearby/api/stop', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-        })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    updateSharingUI(false);
-                    showToast('info', 'Sharing Stopped', 'Live location tracking stopped.');
-                }
-            });
-    });
-
-    // Fetch Nearby Students
-    function fetchNearbyStudents() {
-        if (!isSharing || myLat === null || myLng === null) return;
-
-        const radius = document.getElementById('filterRadius').value;
-        const subject = document.getElementById('filterSubject').value;
-        const exam = document.getElementById('filterExam').value;
-        const sort = document.getElementById('sortBy').value;
-
-        const url = `/nearby/api/list?lat=${myLat}&lng=${myLng}&radius=${radius}&subject=${encodeURIComponent(subject)}&exam=${encodeURIComponent(exam)}&sort=${sort}`;
-
-        fetch(url)
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    renderStudents(data.students);
-                }
-            });
-    }
-
-    function renderStudents(students) {
-        clearPeerMarkers();
-        const listContainer = document.getElementById('studentsList');
-        document.getElementById('studentsCountBadge').textContent = students.length;
-
-        if (students.length === 0) {
-            listContainer.innerHTML = `
-                <div class="text-center text-muted py-5 my-auto">
-                    <i class="bi bi-people fs-1 d-block mb-3 text-secondary"></i>
-                    <h6 class="text-light">No Active Peers Found</h6>
-                    <p class="small text-muted mb-0">No peers match your radius/filters right now. Try expanding your search radius!</p>
-                </div>`;
-            return;
-        }
-
-        let html = '';
-        students.forEach(s => {
-            // Marker
-            let iconHtml;
-            if (s.avatar_url) {
-                iconHtml = `<div class="custom-avatar-marker" style="background-image: url('${s.avatar_url}');"><div class="marker-pulse"></div></div>`;
-            } else {
-                iconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`;
-            }
-            const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [44, 44], iconAnchor: [22, 22] });
-            
-            // Add a tiny visual offset so markers don't perfectly overlap if they have identical coordinates
-            const offsetLat = s.lat + (Math.random() - 0.5) * 0.0003;
-            const offsetLng = s.lng + (Math.random() - 0.5) * 0.0003;
-            const marker = L.marker([offsetLat, offsetLng], { icon }).addTo(map);
-
-            let popupAvatar = s.avatar_url
-                ? `<img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;">`
-                : `<div class="nav-avatar mx-auto mb-2" style="background-color: ${s.avatar_color}; width: 48px; height: 48px; font-size: 1.2rem;">${s.initials}</div>`;
-
-            const popupHtml = `
-                <div class="p-1 text-center">
-                    ${popupAvatar}
-                    <h6 class="mb-1 fw-bold">${s.username}</h6>
-                    <span class="badge bg-warning text-dark mb-2">${s.subject} • ${s.exam}</span>
-                    <p class="small text-muted mb-2">${s.distance_km} km away | 🔥 ${s.streak}d streak</p>
-                    <button class="btn btn-sm btn-accent w-100 open-request-modal" data-uid="${s.user_id}" data-uname="${s.username}">Request to Study</button>
-                </div>`;
-            marker.bindPopup(popupHtml);
-            peerMarkers[s.user_id] = marker;
-
-            // List Card
-            let listAvatar = s.avatar_url
-                ? `<img src="${s.avatar_url}" class="rounded-circle border border-warning" width="50" height="50" style="object-fit: cover; flex-shrink: 0;">`
-                : `<div class="nav-avatar border border-warning flex-shrink-0 d-flex align-items-center justify-content-center fw-bold" style="background-color: ${s.avatar_color}; width: 50px; height: 50px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
-
-            html += `
-                <div class="student-card d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3 overflow-hidden">
-                        ${listAvatar}
-                        <div class="overflow-hidden">
-                            <h6 class="mb-1 text-truncate fw-semibold">${s.username}</h6>
-                            <div class="d-flex gap-1 mb-1 flex-wrap">
-                                <span class="badge bg-dark border border-secondary text-light small">${s.subject}</span>
-                                <span class="badge bg-dark border border-secondary text-light small">${s.exam}</span>
-                            </div>
-                            <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>${s.distance_km} km away • 🔥 ${s.streak}d</small>
-                        </div>
-                    </div>
-                    <button class="btn btn-sm btn-outline-warning open-request-modal ms-2 flex-shrink-0" data-uid="${s.user_id}" data-uname="${s.username}" title="Send Study Request">
-                        <i class="bi bi-send-fill"></i>
-                    </button>
-                </div>`;
-        });
-
-        listContainer.innerHTML = html;
-
-        // Attach click listeners to open modal
-        document.querySelectorAll('.open-request-modal').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const uid = e.currentTarget.getAttribute('data-uid');
-                const uname = e.currentTarget.getAttribute('data-uname');
-                document.getElementById('targetUserId').value = uid;
-                document.getElementById('targetUserName').textContent = uname;
-                new bootstrap.Modal(document.getElementById('sendRequestModal')).show();
-            });
-        });
-    }
-
-    // Filter Change Listeners
-    ['filterRadius', 'filterSubject', 'filterExam', 'sortBy'].forEach(id => {
-        document.getElementById(id).addEventListener('change', fetchNearbyStudents);
-    });
-
-    // Confirm Send Request Button
-    document.getElementById('confirmSendRequestBtn').addEventListener('click', () => {
-        const recipient_id = document.getElementById('targetUserId').value;
-        const note = document.getElementById('requestNote').value.trim();
-        const subject = document.getElementById('shareSubject').value;
-        const exam = document.getElementById('shareExam').value;
-
-        fetch('/nearby/api/request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-            body: JSON.stringify({ recipient_id, subject, exam, note })
-        })
-            .then(r => r.json())
-            .then(data => {
-                bootstrap.Modal.getInstance(document.getElementById('sendRequestModal')).hide();
-                document.getElementById('requestNote').value = '';
-                if (data.success) {
-                    showToast('Study invitation sent successfully!', 'success');
                 } else {
-                    showToast(data.message || 'Could not send request.', 'danger');
+                    showToast('warning', 'Location Error', data.message || 'Could not update location.');
                 }
-            });
-    });
-
-    // Load Pending Incoming Requests
-    function loadPendingRequests() {
-        fetch('/nearby/api/requests/pending')
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    const badge = document.getElementById('pendingRequestsBadge');
-                    if (data.requests.length > 0) {
-                        badge.textContent = data.requests.length;
-                        badge.classList.remove('d-none');
-                    } else {
-                        badge.classList.add('d-none');
-                    }
-                    renderIncomingRequests(data.requests);
-                }
-            });
-    }
-    loadPendingRequests();
-
-    function renderIncomingRequests(requests) {
-        const container = document.getElementById('incomingRequestsContainer');
-        if (requests.length === 0) {
-            container.innerHTML = `<div class="text-center text-muted py-4"><i class="bi bi-check-circle fs-2 d-block mb-2 text-success"></i><p class="mb-0">No pending incoming study requests.</p></div>`;
-            return;
+            })
+            .catch(err => console.error('[LOCATION SHARE ERROR]', err));
         }
 
-        let html = '<div class="d-flex flex-column gap-3">';
-        requests.forEach(r => {
-            html += `
-                <div class="glass-card p-3 border border-warning border-opacity-50 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div>
-                        <h6 class="mb-1 fw-bold text-light"><i class="bi bi-person-fill text-warning me-1"></i>${r.requester_username}</h6>
-                        <span class="badge bg-secondary mb-2">${r.subject || 'General'} • ${r.exam || 'Any'}</span>
-                        <p class="small text-light mb-1">"${r.note || 'Would like to study together nearby!'}"</p>
-                        <small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>Expires at ${new Date(r.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-accent respond-req-btn" data-id="${r.request_id}" data-action="accept"><i class="bi bi-check-lg me-1"></i> Accept</button>
-                        <button class="btn btn-sm btn-outline-danger respond-req-btn" data-id="${r.request_id}" data-action="reject"><i class="bi bi-x-lg me-1"></i> Reject</button>
-                    </div>
-                </div>`;
+        // Share Location Button
+        document.getElementById('shareBtn').addEventListener('click', () => {
+            startLiveLocationTracking();
         });
-        html += '</div>';
-        container.innerHTML = html;
 
-        document.querySelectorAll('.respond-req-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const reqId = e.currentTarget.getAttribute('data-id');
-                const action = e.currentTarget.getAttribute('data-action');
+        // Stop Sharing Button
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            stopLiveLocationTracking();
+            fetch('/nearby/api/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        updateSharingUI(false);
+                        showToast('info', 'Sharing Stopped', 'Live location tracking stopped.');
+                    }
+                });
+        });
 
-                fetch(`/nearby/api/request/${reqId}/respond`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                    body: JSON.stringify({ action })
-                })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            loadPendingRequests();
-                            if (action === 'accept') {
-                                bootstrap.Modal.getInstance(document.getElementById('requestsModal')).hide();
-                                showToast('Request accepted! Redirecting to chat...', 'success');
-                                setTimeout(() => {
-                                    window.location.href = `/messages/?open_dm=${data.result.conversation_id}`;
-                                }, 1000);
-                            } else {
-                                showToast('Request declined.', 'info');
-                            }
-                        } else {
-                            showToast(data.message || 'Error responding to request.', 'danger');
-                        }
-                    });
+        // Fetch Nearby Students
+        function fetchNearbyStudents() {
+            if (!isSharing || myLat === null || myLng === null) return;
+
+            const radius = document.getElementById('filterRadius').value;
+            const subject = document.getElementById('filterSubject').value;
+            const exam = document.getElementById('filterExam').value;
+            const sort = document.getElementById('sortBy').value;
+
+            const url = `/nearby/api/list?lat=${myLat}&lng=${myLng}&radius=${radius}&subject=${encodeURIComponent(subject)}&exam=${encodeURIComponent(exam)}&sort=${sort}`;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        renderStudents(data.students);
+                    }
+                });
+        }
+
+        function renderStudents(students) {
+            const activeUids = new Set(students.map(s => s.user_id));
+
+            // Remove markers for students no longer active/in radius
+            for (let uid in peerMarkers) {
+                if (!activeUids.has(parseInt(uid))) {
+                    map.removeLayer(peerMarkers[uid]);
+                    delete peerMarkers[uid];
+                }
+            }
+
+            const listContainer = document.getElementById('studentsList');
+            document.getElementById('studentsCountBadge').textContent = students.length;
+
+            if (students.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center text-muted py-5 my-auto">
+                        <i class="bi bi-people fs-1 d-block mb-3 text-secondary"></i>
+                        <h6 class="text-light">No Active Peers Found</h6>
+                        <p class="small text-muted mb-0">No peers match your radius/filters right now. Try expanding your search radius!</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            students.forEach(s => {
+                let iconHtml;
+                if (s.avatar_url) {
+                    iconHtml = `<div class="custom-avatar-marker" style="background-image: url('${s.avatar_url}');"><div class="marker-pulse"></div></div>`;
+                } else {
+                    iconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`;
+                }
+
+                let popupAvatar = s.avatar_url
+                    ? `<img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;">`
+                    : `<div class="nav-avatar mx-auto mb-2" style="background-color: ${s.avatar_color}; width: 48px; height: 48px; font-size: 1.2rem;">${s.initials}</div>`;
+
+                const popupHtml = `
+                    <div class="p-1 text-center">
+                        ${popupAvatar}
+                        <h6 class="mb-1 fw-bold">${s.username}</h6>
+                        <span class="badge bg-warning text-dark mb-2">${s.subject} • ${s.exam}</span>
+                        <p class="small text-muted mb-2">${s.distance_km} km away | 🔥 ${s.streak}d streak</p>
+                        <button class="btn btn-sm btn-accent w-100 open-request-modal" data-uid="${s.user_id}" data-uname="${s.username}">Request to Study</button>
+                    </div>`;
+
+                // Stable, deterministic offset for peers at identical coordinates
+                const hash = (s.user_id * 2654435761) % 100;
+                const offsetLat = s.lat + ((hash % 10) - 5) * 0.00005;
+                const offsetLng = s.lng + (Math.floor(hash / 10) - 5) * 0.00005;
+
+                if (peerMarkers[s.user_id]) {
+                    peerMarkers[s.user_id].setLatLng([offsetLat, offsetLng]);
+                    if (peerMarkers[s.user_id].getPopup()) {
+                        peerMarkers[s.user_id].getPopup().setContent(popupHtml);
+                    }
+                } else {
+                    const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [44, 44], iconAnchor: [22, 22] });
+                    const marker = L.marker([offsetLat, offsetLng], { icon }).addTo(map);
+                    marker.bindPopup(popupHtml);
+                    peerMarkers[s.user_id] = marker;
+                }
+
+                let listAvatar = s.avatar_url
+                    ? `<img src="${s.avatar_url}" class="rounded-circle border border-warning" width="50" height="50" style="object-fit: cover; flex-shrink: 0;">`
+                    : `<div class="nav-avatar border border-warning flex-shrink-0 d-flex align-items-center justify-content-center fw-bold" style="background-color: ${s.avatar_color}; width: 50px; height: 50px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
+
+                html += `
+                    <div class="student-card d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3 overflow-hidden">
+                            ${listAvatar}
+                            <div class="overflow-hidden">
+                                <h6 class="mb-1 text-truncate fw-semibold">${s.username}</h6>
+                                <div class="d-flex gap-1 mb-1 flex-wrap">
+                                    <span class="badge bg-dark border border-secondary text-light small">${s.subject}</span>
+                                    <span class="badge bg-dark border border-secondary text-light small">${s.exam}</span>
+                                </div>
+                                <small class="text-muted"><i class="bi bi-geo-alt me-1"></i>${s.distance_km} km away • 🔥 ${s.streak}d</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-warning open-request-modal ms-2 flex-shrink-0" data-uid="${s.user_id}" data-uname="${s.username}" title="Send Study Request">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>`;
             });
-        });
-    }
 
-    // Refresh incoming requests periodically or on modal open
-    document.getElementById('requestsModal').addEventListener('show.bs.modal', loadPendingRequests);
-});
+            listContainer.innerHTML = html;
+
+            document.querySelectorAll('.open-request-modal').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const uid = e.currentTarget.getAttribute('data-uid');
+                    const uname = e.currentTarget.getAttribute('data-uname');
+                    document.getElementById('targetUserId').value = uid;
+                    document.getElementById('targetUserName').textContent = uname;
+                    new bootstrap.Modal(document.getElementById('sendRequestModal')).show();
+                });
+            });
+        }
+
+        // Filter Change Listeners
+        ['filterRadius', 'filterSubject', 'filterExam', 'sortBy'].forEach(id => {
+            document.getElementById(id).addEventListener('change', fetchNearbyStudents);
+        });
+
+        // Confirm Send Request Button
+        document.getElementById('confirmSendRequestBtn').addEventListener('click', () => {
+            const recipient_id = document.getElementById('targetUserId').value;
+            const note = document.getElementById('requestNote').value.trim();
+            const subject = document.getElementById('shareSubject').value;
+            const exam = document.getElementById('shareExam').value;
+
+            fetch('/nearby/api/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ recipient_id, subject, exam, note })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    bootstrap.Modal.getInstance(document.getElementById('sendRequestModal')).hide();
+                    document.getElementById('requestNote').value = '';
+                    if (data.success) {
+                        showToast('Study invitation sent successfully!', 'success');
+                    } else {
+                        showToast(data.message || 'Could not send request.', 'danger');
+                    }
+                });
+        });
+
+        // Load Pending Incoming Requests
+        function loadPendingRequests() {
+            fetch('/nearby/api/requests/pending')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const badge = document.getElementById('pendingRequestsBadge');
+                        if (data.requests.length > 0) {
+                            badge.textContent = data.requests.length;
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+                        renderIncomingRequests(data.requests);
+                    }
+                });
+        }
+        loadPendingRequests();
+
+        function renderIncomingRequests(requests) {
+            const container = document.getElementById('incomingRequestsContainer');
+            if (requests.length === 0) {
+                container.innerHTML = `<div class="text-center text-muted py-4"><i class="bi bi-check-circle fs-2 d-block mb-2 text-success"></i><p class="mb-0">No pending incoming study requests.</p></div>`;
+                return;
+            }
+
+            let html = '<div class="d-flex flex-column gap-3">';
+            requests.forEach(r => {
+                html += `
+                    <div class="glass-card p-3 border border-warning border-opacity-50 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h6 class="mb-1 fw-bold text-light"><i class="bi bi-person-fill text-warning me-1"></i>${r.requester_username}</h6>
+                            <span class="badge bg-secondary mb-2">${r.subject || 'General'} • ${r.exam || 'Any'}</span>
+                            <p class="small text-light mb-1">"${r.note || 'Would like to study together nearby!'}"</p>
+                            <small class="text-muted" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>Expires at ${new Date(r.expires_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-accent respond-req-btn" data-id="${r.request_id}" data-action="accept"><i class="bi bi-check-lg me-1"></i> Accept</button>
+                            <button class="btn btn-sm btn-outline-danger respond-req-btn" data-id="${r.request_id}" data-action="reject"><i class="bi bi-x-lg me-1"></i> Reject</button>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            document.querySelectorAll('.respond-req-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const reqId = e.currentTarget.getAttribute('data-id');
+                    const action = e.currentTarget.getAttribute('data-action');
+
+                    fetch(`/nearby/api/request/${reqId}/respond`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                        body: JSON.stringify({ action })
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                loadPendingRequests();
+                                if (action === 'accept') {
+                                    bootstrap.Modal.getInstance(document.getElementById('requestsModal')).hide();
+                                    showToast('Request accepted! Redirecting to chat...', 'success');
+                                    setTimeout(() => {
+                                        window.location.href = `/messages/?open_dm=${data.result.conversation_id}`;
+                                    }, 1000);
+                                } else {
+                                    showToast('Request declined.', 'info');
+                                }
+                            } else {
+                                showToast(data.message || 'Error responding to request.', 'danger');
+                            }
+                        });
+                });
+            });
+        }
+
+        document.getElementById('requestsModal').addEventListener('show.bs.modal', loadPendingRequests);
+    });
 </script>
 {% endblock %}

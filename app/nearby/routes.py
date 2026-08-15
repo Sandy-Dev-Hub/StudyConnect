@@ -20,36 +20,25 @@ def index():
     return render_template('nearby/index.html', is_sharing=is_sharing, shared_lat=shared_lat, shared_lng=shared_lng, expires_at=expires_at)
 
 
-@nearby_bp.route('/api/ip-location', methods=['GET'])
-def get_ip_location():
-    """Fetch user IP location using free ipapi REST service."""
-    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    if user_ip and ',' in user_ip:
-        user_ip = user_ip.split(',')[0].strip()
-    
-    loc = LocationService.resolve_ip_location(user_ip)
-    if loc:
-        return jsonify({'success': True, 'location': loc})
-    return jsonify({'success': False, 'message': 'Could not resolve IP location.'}), 404
-
 
 @nearby_bp.route('/api/share', methods=['POST'])
 @login_required
 @rate_limit(max_requests=10, period_seconds=60)
 def share_location():
-    """Opt-in location sharing API with coordinate randomization."""
+    """Opt-in location sharing API with coordinate validation."""
     data = request.get_json() or {}
     lat = data.get('lat')
     lng = data.get('lng')
     subject = data.get('subject')
     exam = data.get('exam')
+    accuracy = data.get('accuracy')
 
     if lat is None or lng is None:
         return jsonify({'success': False, 'message': 'Latitude and longitude are required.'}), 400
 
     try:
-        res = LocationService.share_location(current_user.id, lat, lng, subject, exam)
-        return jsonify({'success': False if not res else True, 'data': res})
+        res = LocationService.share_location(current_user.id, lat, lng, subject, exam, accuracy=accuracy)
+        return jsonify({'success': True, 'data': res})
     except ValueError as e:
         return jsonify({'success': False, 'message': str(e)}), 400
 
