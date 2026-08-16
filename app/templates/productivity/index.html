@@ -147,7 +147,7 @@
             <div id="timer-display" class="timer-display" role="timer" aria-live="polite">25:00</div>
 
             <!-- Control Buttons -->
-            <div class="d-flex justify-content-center gap-3">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
                 <button id="btn-start" class="btn control-btn btn-start">
                     <i class="bi bi-play-fill me-1"></i> Start
                 </button>
@@ -241,18 +241,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Request desktop notifications
     if (btnNotify) {
-        if (Notification.permission === 'granted') {
+        if ('Notification' in window && Notification.permission === 'granted') {
             btnNotify.innerHTML = '<i class="bi bi-bell-fill text-warning me-1"></i> Enabled';
             btnNotify.classList.replace('btn-outline-secondary', 'btn-outline-warning');
         }
         btnNotify.addEventListener('click', () => {
-            Notification.requestPermission().then(perm => {
-                if (perm === 'granted') {
-                    btnNotify.innerHTML = '<i class="bi bi-bell-fill text-warning me-1"></i> Enabled';
-                    btnNotify.classList.replace('btn-outline-secondary', 'btn-outline-warning');
-                    new Notification('StudyConnect', { body: 'Desktop notifications enabled for study sessions!' });
-                }
-            });
+            if ('Notification' in window) {
+                Notification.requestPermission().then(perm => {
+                    if (perm === 'granted') {
+                        btnNotify.innerHTML = '<i class="bi bi-bell-fill text-warning me-1"></i> Enabled';
+                        btnNotify.classList.replace('btn-outline-secondary', 'btn-outline-warning');
+                        new Notification('StudyConnect', { body: 'Desktop notifications enabled for study sessions!' });
+                    }
+                });
+            } else {
+                alert('Notifications are not supported on this device.');
+            }
         });
     }
 
