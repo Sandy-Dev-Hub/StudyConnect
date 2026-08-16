@@ -5,7 +5,10 @@ import multiprocessing
 import os
 
 # Bind address and port
-bind = os.getenv("GUNICORN_BIND", "0.0.0.0:5000")
+bind = os.getenv(
+    "GUNICORN_BIND",
+    f"0.0.0.0:{os.getenv('PORT', '5000')}"
+)
 
 # Worker configuration for Flask-SocketIO compatibility
 _default_workers = (multiprocessing.cpu_count() * 2 + 1) if os.getenv("REDIS_URL") else 1
