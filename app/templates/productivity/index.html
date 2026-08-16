@@ -146,22 +146,29 @@
             <!-- Timer Display -->
             <div id="timer-display" class="timer-display" role="timer" aria-live="polite">25:00</div>
 
-            <!-- Control Buttons -->
-            <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <!-- Control Buttons (Idle State) -->
+            <div id="controls-idle" class="d-flex justify-content-center gap-3">
                 <button id="btn-start" class="btn control-btn btn-start">
                     <i class="bi bi-play-fill me-1"></i> Start
                 </button>
-                <button id="btn-pause" class="btn control-btn btn-outline-light d-none">
+                <button id="btn-reset-idle" class="btn control-btn btn-outline-secondary">
+                    <i class="bi-arrow-counterclockwise me-1"></i> Reset
+                </button>
+            </div>
+
+            <!-- Control Buttons (Active State) -->
+            <div id="controls-active" class="d-flex justify-content-center gap-3 d-none">
+                <button id="btn-pause" class="btn control-btn btn-outline-light">
                     <i class="bi bi-pause-fill me-1"></i> Pause
                 </button>
                 <button id="btn-resume" class="btn control-btn btn-start d-none">
                     <i class="bi bi-play-fill me-1"></i> Resume
                 </button>
-                <button id="btn-stop" class="btn control-btn btn-outline-danger d-none">
+                <button id="btn-stop" class="btn control-btn btn-outline-danger">
                     <i class="bi bi-stop-fill me-1"></i> Stop
                 </button>
-                <button id="btn-reset" class="btn control-btn btn-outline-secondary">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                <button id="btn-reset-active" class="btn control-btn btn-outline-secondary">
+                    <i class="bi-arrow-counterclockwise me-1"></i> Reset
                 </button>
             </div>
         </div>
@@ -222,7 +229,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnPause = document.getElementById('btn-pause');
     const btnResume = document.getElementById('btn-resume');
     const btnStop = document.getElementById('btn-stop');
-    const btnReset = document.getElementById('btn-reset');
+    const btnResetIdle = document.getElementById('btn-reset-idle');
+    const btnResetActive = document.getElementById('btn-reset-active');
+    const controlsIdle = document.getElementById('controls-idle');
+    const controlsActive = document.getElementById('controls-active');
     const btnNotify = document.getElementById('btn-notify-perm');
     const subjectInput = document.getElementById('study-subject');
     const modeBtns = document.querySelectorAll('.mode-btn');
@@ -293,22 +303,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setButtonsState() {
         if (!isRunning && !isPaused) {
-            btnStart.classList.remove('d-none');
-            btnPause.classList.add('d-none');
-            btnResume.classList.add('d-none');
-            btnStop.classList.add('d-none');
+            controlsIdle.classList.remove('d-none');
+            controlsActive.classList.add('d-none');
             display.classList.remove('running');
         } else if (isRunning) {
-            btnStart.classList.add('d-none');
+            controlsIdle.classList.add('d-none');
+            controlsActive.classList.remove('d-none');
             btnPause.classList.remove('d-none');
             btnResume.classList.add('d-none');
-            btnStop.classList.remove('d-none');
             display.classList.add('running');
         } else if (isPaused) {
-            btnStart.classList.add('d-none');
+            controlsIdle.classList.add('d-none');
+            controlsActive.classList.remove('d-none');
             btnPause.classList.add('d-none');
             btnResume.classList.remove('d-none');
-            btnStop.classList.remove('d-none');
             display.classList.remove('running');
         }
     }
@@ -363,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setButtonsState();
         playAlarm();
 
-        if (Notification.permission === 'granted') {
+        if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Session Completed!', {
                 body: `You completed your ${durationMins}m ${currentMode} session on ${subjectInput.value || 'General'}!`,
                 icon: '/static/favicon.ico'
@@ -478,7 +486,8 @@ document.addEventListener('DOMContentLoaded', function() {
     btnPause.addEventListener('click', pauseTimer);
     btnResume.addEventListener('click', () => startTimer(true));
     btnStop.addEventListener('click', stopTimer);
-    btnReset.addEventListener('click', stopTimer);
+    btnResetIdle.addEventListener('click', stopTimer);
+    btnResetActive.addEventListener('click', stopTimer);
 
     // Initial state load
     loadStateFromBackend();
