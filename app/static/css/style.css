@@ -1364,8 +1364,14 @@ body.mobile-menu-open {
    ================================================= */
 .hero-section {
   background: transparent;
-  padding: 6rem 0 3rem;
+  padding: 1.5rem 0 3rem;
   position: relative;
+}
+
+@media (min-width: 992px) {
+  .hero-section {
+    padding: 6rem 0 3rem;
+  }
 }
 
 .hero-title {
