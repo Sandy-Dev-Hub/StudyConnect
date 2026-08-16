@@ -4,7 +4,7 @@ A full-stack social learning and study platform for students to connect, learn, 
 
 ## 🚀 Live Demo
 
-🌐 **[Visit StudyConnect](https://studyconnect-production-c8e6.up.railway.app/)**
+🌐 **[Visit StudyConnect](https://studyconnect-learn.up.railway.app/)**
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white)
@@ -226,7 +226,7 @@ StudyConnect is currently deployed and running in a production environment.
 
 Because the application relies heavily on real-time WebSockets, Railway provides an excellent persistent hosting environment.
 
-🌐 **Live Website:** [https://studyconnect-production-c8e6.up.railway.app/](https://studyconnect-production-c8e6.up.railway.app/)
+🌐 **Live Website:** [https://studyconnect-learn.up.railway.app/](https://studyconnect-learn.up.railway.app/)
 
 ## 📌 Current Status
 
@@ -286,5 +286,5 @@ Licensing information will be added separately.
 
 ## 🔗 Project Links
 
-🌐 **Live Website:** [https://studyconnect-production-c8e6.up.railway.app/](https://studyconnect-production-c8e6.up.railway.app/)  
+🌐 **Live Website:** [https://studyconnect-learn.up.railway.app/](https://studyconnect-learn.up.railway.app/)  
 💻 **GitHub Repository:** Please refer to the repository URL where this README is hosted.
