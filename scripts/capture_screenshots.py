@@ -105,12 +105,11 @@ def slugify_route(route: str) -> str:
     if not clean: return "landing"
     return clean.replace("/", "-")
 
-def capture_page(page, url, name, is_mobile=False):
-    prefix = "mobile" if is_mobile else "desktop"
     filename = f"{prefix}-{name}.png"
     print(f"[screenshot] Capturing {filename} ...")
     try:
         page.goto(url, wait_until="networkidle")
+        page.add_style_tag(content="#onboardingModal, .modal-backdrop { display: none !important; opacity: 0 !important; visibility: hidden !important; }")
         page.wait_for_timeout(2000)
         capture_via_cdp(page, filename)
     except Exception as e:
