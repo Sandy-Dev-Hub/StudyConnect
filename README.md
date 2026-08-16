@@ -1,454 +1,290 @@
-<div align="center">
-  <img src="docs/images/logo/logo-icon-transparent.png" alt="StudyConnect Official Logo" width="260">
-</div>
-
-<br>
-
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)
-![Socket.io](https://img.shields.io/badge/Socket.io-Real--Time-010101?style=for-the-badge&logo=socket.io&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-Geospatial-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-ORM-316192?style=for-the-badge&logo=postgresql&logoColor=white)
-![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=for-the-badge&logo=leaflet&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-EA8528?style=for-the-badge)
-
-**Version: v1.1.0**
-
-**A gamified peer-learning community, collaborative study platform, and real-time networking ecosystem built with Flask.**
-Ask doubts, share knowledge, earn points, climb the leaderboard, form collaborative study groups, and discover peers studying near you.
-
----
-
-## Overview
-
-StudyConnect is a gamified peer-learning community for students preparing for competitive exams (JEE, NEET, UPSC, SAT, GRE, etc.).
-
-**Phase 1 features:**
-- User registration, login, email verification, and password reset
-- Ask questions with subject/exam tags and optional image attachments
-- Markdown answers with live preview
-- Upvote / downvote answers (AJAX)
-- Accept best answer (AJAX)
-- Points: +10 post, +5 upvote, +25 accept
-- Daily login streak tracking
-- Leaderboard (all-time and weekly, filterable by subject/exam)
-- Search and filter questions
-- Responsive glassmorphism UI
-
----
-
-## 🚀 Phase 2 — Community & Networking
-
-Phase 2 introduces vibrant social networking and real-time collaboration tools. **Crucially, Phase 2 was implemented while preserving every Phase 1 feature and maintaining the premium dark glassmorphism design language (#111110 background, #EA8528 amber accent).**
-
-### Study Groups
-- Create public and private study groups tailored to specific subjects and exams
-- Join and leave study groups dynamically
-- Complete group management features for administrators
-- Granular group member roles (Owner, Moderator, Member)
-- Real-time group activity feeds and shared discussion questions
-- Subject & exam based group categorization
-
-### Student Profiles
-- Custom avatar image uploads with dynamic fallback rendering
-- High-resolution profile banners
-- Personalized student bios
-- Subject specialization badges
-- Exam specialization tracking
-- Comprehensive statistics dashboards displaying:
-  - Total earned points
-  - Daily login and study streaks
-  - Total questions answered
-  - Total questions asked
-
-### Student Connections
-- Send direct connection requests to fellow peers
-- Accept / Reject incoming requests with real-time feedback
-- Dedicated connections network list
-- Discovery of mutual connections between students
-
-### Real-Time Messaging
-- Private 1-on-1 direct messaging powered by **Flask-SocketIO** and **Redis Pub/Sub**
-- Live typing indicators (`User is typing...`)
-- Real-time online status tracking and presence updates
-- Instant message delivery and read receipts
-- Ergonomic split-screen chat UI with sidebar conversation switcher
-- Fully responsive messaging interface optimized for all screen sizes
-
----
-
-## 🌍 Phase 3 — Nearby Study Discovery
-
-Phase 3 transforms StudyConnect into a location-aware study companion, allowing students to discover peers studying nearby and initiate real-time collaboration sessions safely. **All existing Phase 1 and Phase 2 functionality remains fully compatible.**
-
-### Location Sharing
-- Powered by the browser Geolocation API
-- Strict opt-in location sharing model
-- Manual start and stop sharing controls
-- Automatic expiration after 4 hours of inactivity
-- Temporary Redis geospatial storage
-- **Never permanently stores GPS coordinates** in any relational database
-
-### Privacy & Security
-- **Randomized coordinate jitter** ($\pm 0.0005$) applied before approximation
-- Approximate locations only ($\sim 100\text{m} - 150\text{m}$ accuracy rounding to 3 decimal places)
-- Exact GPS coordinates are never exposed to the client or network API
-- Automatic cleanup of background data upon session timeout
-- Immediate location broadcast termination on logout or SocketIO disconnect
-
-### Nearby Discovery
-- Interactive map powered by **Leaflet.js** and **CartoDB Dark Matter tiles** matching the dark theme
-- Custom glowing amber avatar map markers
-- Discover nearby students within a configurable radius ($1\text{km}$, $2\text{km}$, $5\text{km}$, $10\text{km}$)
-- Dynamic filtering by Subject specialization
-- Dynamic filtering by Exam specialization
-- Sorting by Distance (Nearest), Study Streak, or Total Points
-- Responsive discovery panel and active peer sidebar
-
-### Study Requests
-- Send instant study invitations to peers appearing on the nearby map
-- Accept or Reject requests via real-time modal drawers
-- Anti-spam **30-second cooldown** enforced between requests
-- Duplicate pending request prevention logic
-- Automatic request expiration after 15 minutes
-
-### Real-Time Integration
-- Instant **Socket.IO events** (`study_request_received`, `study_request_accepted`, `study_request_rejected`)
-- Live nearby feed updates reflecting peer movement or status changes
-- Instant toast notifications across all active tabs
-- **Automatic private chat creation**: Accepting a request invokes Phase 2's `Conversation.get_or_create()` and immediately redirects both users into a live messaging session
-
-### Enterprise Features
-- **Redis GEO indexing** (`GEOADD`, `GEOSEARCH`, `GEODIST`) for high-concurrency spatial queries
-- Thread-safe **Memory fallback** (`MemoryLocationStorage`) for local Windows and development environments
-- API rate limiting decorators (`@rate_limit`) protecting discovery endpoints
-- Structured JSON logging across all spatial events
-- Centralized exception handling ensuring graceful error recovery
-- Storage abstraction architecture (`get_storage()`)
-- Anonymous analytics hooks tracking platform adoption metrics
-
----
-
-## ⏱ Phase 4 — Productivity & Study Analytics
-
-Phase 4 introduces powerful productivity tools, study tracking, and personal analytics designed to keep students focused and motivated. **All existing Phase 1, Phase 2, and Phase 3 functionality remains fully integrated and operational.**
-
-### ⏱ Personal Pomodoro
-- Focus timer with start, pause, resume, and reset controls
-- Custom durations tailored to individual study habits
-- HTML5 Browser notifications on session completion
-- Auto-save sessions and persistent state tracking across browser refreshes
-- Session persistence backed by user activity logs
-- **+2 points** awarded automatically on completed focus sessions
-- Automatic daily study streak updates upon session completion
-
-### 👥 Group Pomodoro
-- Shared study rooms for synchronized peer focus
-- Real-time synchronized timers across all connected participants
-- **Socket.IO synchronization** ensuring instantaneous state broadcast
-- **Redis-backed timer persistence** preventing state drift
-- Granular Moderator/Admin controls to start, pause, and reset group timers
-- Live synchronized countdown visible to all members in the room
-
-### 🎯 Study Goals
-- Daily goals tracking study targets
-- Weekly goals tracking cumulative progress
-- Intuitive goal creation and management
-- Automated goal completion tracking
-- Animated progress bars reflecting real-time percentage completion
-
-### 📊 Productivity Dashboard
-- Comprehensive weekly study hours tracking
-- Visual subject breakdown showing time spent per topic
-- Dynamic goal completion rate calculation
-- GitHub-style 365-day dark/amber contribution heatmap
-- Interactive **Chart.js** analytics and distribution charts
-- Granular study session history logs
-
----
-
-## 🔍 Phase 5 — Production Polish & Enterprise Features
-
-Phase 5 elevates StudyConnect into a high-performance, enterprise-grade application ready for public deployment on modern cloud platforms.
-
-### 🔍 Phase 5B — PostgreSQL Search Engine
-- **Generated TSVector Columns**: Automated vector synchronization via PostgreSQL dialect DDL (`GENERATED ALWAYS AS (...) STORED`).
-- **GIN Indexing**: Inverted index creation across all searchable text columns for sub-millisecond query lookups.
-- **Relevance Ranking (`ts_rank`)**: Intelligent result ordering based on term frequency and matching density.
-- **Highlighted Excerpts (`ts_headline`)**: Dynamic `<mark>` HTML wrapping around matching search terms.
-- **Prefix Matching**: Prefix query support (`to_tsquery('english', 'term:*')`) allowing rapid partial-word autocomplete.
-- **Categorized Suggestions**: Interactive floating navbar search delivering structured split results for Questions and Study Groups.
-
----
-
-## 📸 Application Screenshots
-
-### Home & Community Overview
-![Home Overview](docs/images/home.png)
-
-### Authentication & Registration
-| Login | Register |
-|:---:|:---:|
-| ![Login](docs/images/login.png) | ![Register](docs/images/register.png) |
-
-### Questions Feed & Detail View
-![Questions Feed](docs/images/questions-feed.png)
-![Question Detail](docs/images/question-detail.png)
-![Ask Question](docs/images/ask-question.png)
-
-### Study Groups & Collaborative Rooms
-![Study Groups](docs/images/groups.png)
-![Group Detail](docs/images/group-detail.png)
-
-### Real-Time Peer Messaging & Nearby Study Discovery
-![Messaging](docs/images/messaging.png)
-![Nearby Peer Discovery](docs/images/nearby.png)
-
-### Productivity Dashboard & Personal Pomodoro Focus
-![Productivity Dashboard](docs/images/productivity-dashboard.png)
-![Pomodoro Focus Timer](docs/images/pomodoro.png)
-
-### Study Analytics & GitHub-Style Heatmap
-![Analytics Dashboard](docs/images/analytics-dashboard.png)
-![Study Heatmap](docs/images/heatmap.png)
-
-### Leaderboard, Notifications & Search Autocomplete
-![Leaderboard](docs/images/leaderboard.png)
-![Notifications Hub](docs/images/notifications.png)
-![Search Autocomplete](docs/images/search-autocomplete.png)
-
-### Student Profile & Mobile Responsive Viewport
-| Student Profile | Mobile Viewport (375px) |
-|:---:|:---:|
-| ![Profile](docs/images/profile.png) | ![Mobile View](docs/images/mobile-view.png) |
-
----
-
-## 📊 Project Roadmap & Release Status
-
-| Phase | Status | Milestone Description |
-| :--- | :---: | :--- |
-| **Phase 1** | ✅ Completed | Foundation, Authentication, Q&A, Voting, Points & Leaderboard |
-| **Phase 2** | ✅ Completed | Community, Student Profiles, Study Groups, Connections & Real-Time DM |
-| **Phase 3** | ✅ Completed | Nearby Study Discovery, Interactive Map, Storage Abstraction & Requests |
-| **Phase 4** | ✅ Completed | Productivity (Pomodoro Timer, Group Sessions & Study Goals) |
-| **Phase 5** | ✅ Completed | Enterprise FTS Search Engine, Notifications, Performance, Accessibility & Cloud Deployment (v1.0.0 Released) |
-
----
-
-## 🛠 Technology Stack
-
-### Backend
-- **Flask**: Lightweight Python web framework
-- **Flask-SocketIO**: WebSockets and real-time bi-directional communication
-- **SQLAlchemy**: Object-Relational Mapping (ORM)
-- **PostgreSQL**: Robust production relational database
-- **Redis**: High-speed in-memory data store & Pub/Sub broker
-- **GeoAlchemy2**: Spatial database extension schemas
-- **Alembic / Flask-Migrate**: Database schema migration management
-- **Productivity Blueprint**: Dedicated modular structure for focus sessions and goals
-- **Analytics Service**: High-performance aggregation engine with Redis caching
-
-### Frontend
-- **Bootstrap 5**: Responsive layout grid and UI component framework
-- **Jinja2**: Server-side HTML templating engine
-- **Leaflet.js**: Mobile-friendly interactive mapping library
-- **Chart.js**: Interactive data visualization and study graphs
-- **Pomodoro Engine**: Client-side background timer with HTML5 notifications
-- **Heatmap Components**: GitHub-style activity contribution matrix
-- **JavaScript (ES6+)**: Dynamic client-side interactivity and AJAX workflows
-- **HTML5 & CSS3**: Custom dark glassmorphism design system (`#111110` & `#EA8528`)
-
-### Infrastructure
-- **Redis GEO**: In-memory spatial indexing and radius calculation engine
-- **Redis Timer Persistence**: Reliable shared room state and countdown storage
-- **Socket.IO Synchronization**: Low-latency WebSocket event broadcasting
-- **Gunicorn**: WSGI HTTP server for production deployment
-- **Gevent**: High-performance greenlet networking library for WebSocket support
-
----
-
-## ✨ Key Features
-
-### Foundation & Community (Phases 1 & 2)
-- ✅ User Registration, Email Verification & Password Reset
-- ✅ Rich Markdown Question & Answer Engine with Image Attachments
-- ✅ AJAX Upvoting, Downvoting, and Best Answer Acceptance
-- ✅ Gamified Points System & Daily Login Streaks
-- ✅ Global & Weekly Filterable Leaderboards
-- ✅ Public & Private Study Groups with Role Management
-- ✅ Customizable Student Profiles with Avatars, Banners & Bios
-- ✅ Peer Networking & Connection Requests
-- ✅ Real-Time Split-Screen Direct Messaging with Typing Indicators
-
-### Nearby Discovery & Collaboration (Phase 3)
-- ✅ Browser Geolocation Opt-In Location Sharing
-- ✅ Privacy-First Randomized Jitter ($\pm 0.0005$) & 3 Decimal Rounding
-- ✅ Interactive Leaflet Map with CartoDB Dark Matter Tiles
-- ✅ Custom Glowing Amber Avatar Map Markers
-- ✅ Configurable Radius Search ($1\text{km} - 10\text{km}$) with Subject/Exam Filters
-- ✅ Instant Study Requests with 30s Cooldown & Anti-Spam Protection
-- ✅ Real-Time Socket.IO Invitation Notifications & Drawer Modal
-
-### Productivity & Study Analytics (Phase 4)
-- ✅ Personal Pomodoro
-- ✅ Group Pomodoro
-- ✅ Daily & Weekly Goals
-- ✅ Productivity Dashboard
-- ✅ Analytics
-- ✅ Heatmap
-- ✅ Study Session Tracking
-
-### Future Polish (Phase 5)
-- 🚧 Global Real-Time Push Notifications (Coming Soon)
-- 🚧 Full-Text Elasticsearch Question & Group Search (Coming Soon)
-- 🚧 Progressive Web App (PWA) Mobile Optimization (Coming Soon)
-
----
-
-## Installation
-
-### 1. Clone and install
-
-    git clone <repo-url>
-    cd StudyConnect
-    python -m venv venv
-    venv\Scripts\activate
-    pip install -r requirements.txt
-
-### 2. Configure environment
-
-    cp .env.example .env
-
-Edit `.env`. Key variables:
-
-| Variable | Description |
-|---|---|
-| `SECRET_KEY` | Flask signing key (required for secure sessions) |
-| `DATABASE_URL` | Leave empty for SQLite dev, or provide a Neon / PostgreSQL connection string (`postgresql+psycopg://...`) |
-| `REDIS_URL` | Provide a Redis instance URL (`redis://...`) for spatial queries and room sync, or leave empty for in-memory fallback |
-| `MAIL_*` | SMTP credentials for email verification |
-| `MAIL_SUPPRESS_SEND` | Set `1` to print verification emails directly to console |
-
-#### ☁️ Neon PostgreSQL Setup
-To connect StudyConnect to a serverless **Neon PostgreSQL** production database:
-1. Create a project on [Neon](https://neon.tech) and copy your connection string.
-2. In your `.env` file, set `DATABASE_URL=postgresql+psycopg://user:pass@ep-xyz.region.aws.neon.tech/dbname?sslmode=require`.
-3. Run `flask db upgrade` to automatically execute all Alembic schema migrations against Neon.
-
-#### 🔴 Redis Setup
-To enable high-performance spatial indexing (GeoAlchemy/Redis GEO) and real-time synchronized Pomodoro timer persistence:
-1. Install and start a local Redis server or provision a cloud instance (e.g., Redis Cloud / Upstash).
-2. In your `.env` file, set `REDIS_URL=redis://localhost:6379/0` (or your cloud broker URI).
-
-### 3. Initialize database and run
-
-    flask db upgrade
-    python run.py
-
-App runs locally at `http://localhost:5000`
-
----
-
-## Production
-
-1. Set `FLASK_ENV=production` and a strong, cryptographic `SECRET_KEY`
-2. Configure a serverless Neon PostgreSQL `DATABASE_URL` instance
-3. Set real SMTP server credentials and `MAIL_SUPPRESS_SEND=0`
-4. Configure `REDIS_URL` for production WebSocket Pub/Sub and GEO indexing
-5. Run using Gevent worker class: `gunicorn -c gunicorn_config.py run:app`
-
----
-
-## Points System
-
-| Action | Points Earned |
-|---|:---:|
-| Post an answer | **+10** |
-| Answer accepted | **+25** |
-| Receive upvote | **+5** |
-| Receive downvote | **-2** |
-| Complete focus study session | **+2** |
-
----
-
-## 🚀 Phase 5 — Production Polish & Enterprise Features (v1.0.0 Production Ready)
-
-### ✅ Phase 5A — PostgreSQL Full Text Search Engine
-- **Enterprise FTS:** Powered by PostgreSQL `TSVECTOR` and GIN indexing on `Question` and `StudyGroup` models.
-- **Relevancy Scoring & Excerpts:** Uses `ts_rank` for relevancy matching and `ts_headline` with `<mark>` tags for dynamic excerpt highlighting.
-- **Floating Autocomplete:** Live dropdown search results across questions and study groups.
-
-### ✅ Phase 5B — Real-Time Notification System
-- **Centralized Hub:** Dedicated Notification bell in navbar with animated red unread badge pill and glassmorphic dropdown.
-- **Real-Time Delivery:** Instantaneous Socket.IO broadcasting (`new_notification`) with floating Bootstrap toasts.
-- **Universal Event Hooks:** Automated notifications for Q&A answers, accepted answers, connection requests, group joins, nearby study matches, pomodoro completions, and study streak increases.
-- **Notification History Page:** Comprehensive filtering and management page at `/notifications`.
-
-### ✅ Phase 5C — Performance Optimization
-- **Intelligent Redis Caching:** 5-minute memoization on leaderboards and home stats, 5-minute cache on user analytics dashboards, and 30-second cache on live search suggestions.
-- **Zero N+1 Queries:** Eager loading (`joinedload()`) integrated across feeds, profile views, groups, notifications, and productivity models.
-- **Query & Latency Logging:** Automatic threshold monitoring logging slow database queries (`> 100ms`) and HTTP requests (`> 500ms`).
-
-### ✅ Phase 5D — Responsive UI & Accessibility (WCAG 2.1 AA)
-- **Flawless Responsiveness:** Zero horizontal scrolling across standard viewports (1920px down to 360px mobile viewports).
-- **Universal Touch Targets:** Minimum `44×44px` clickable dimensions enforced across all buttons, dropdown items, and navigation links on mobile devices.
-- **High-Contrast Design:** Upgraded secondary text opacity (`--text-2: 0.68`) ensuring `> 4.5:1` contrast ratios on dark backgrounds.
-- **Keyboard Navigation:** High-visibility amber `:focus-visible` outlines and ARIA combobox/navigation labels.
-
-### ✅ Phase 5E — Production Deployment & Cloud Orchestration
-- **Production Containerization:** Optimized multi-stage `Dockerfile` running non-root runtime user (`studyconnect`).
-- **Cloud Database Ready:** Zero local DB containers in `docker-compose.yml`; natively connects to serverless **Neon Managed PostgreSQL**.
-- **Real-Time Gevent Workers:** Production `gunicorn_config.py` configured with Gevent WebSocket workers for seamless Socket.IO WebSocket handling.
-- **Health Diagnostics:** Built-in `GET /api/health` endpoint monitoring live DB, Redis, and Socket.IO status.
-- **Deployment Guide:** Comprehensive deployment documentation in `DEPLOYMENT.md`.
-
----
-
-## What's New: v1.1.0 (Nearby Students Update)
-
-*August 15, 2026*
-
-This release overhauls the Nearby Students feature to improve accuracy, reliability, and the user experience:
-
-- Removed the IP-based location fallback — Nearby Students now relies on device GPS only, never an IP-based location guess.
-- Added GPS accuracy validation (rejects readings worse than 1000m) on both frontend and backend, with Null Island and coordinate-range checks server-side.
-- Fixed GPS watching so a single poor-accuracy reading no longer stops location tracking — the app keeps listening for a better fix instead of giving up.
-- Added a non-alarming "Searching for your location…" state while waiting for an accurate GPS fix, replacing the previous error-style banner.
-- Throttled location update requests to the server to prevent hitting rate limits during normal use.
-- Fixed the GPS status banner layout so it displays fully on both mobile and desktop screen widths without being clipped.
-
----
-
-## Screenshots
-
-### Home & Community Overview
-![Home Overview](docs/screenshots/desktop-landing.png)
-
-### Questions Feed & Detail View
-![Questions](docs/screenshots/desktop-questions.png)
-
-### Study Groups & Collaborative Rooms
-![Groups](docs/screenshots/desktop-groups.png)
-
-### Nearby Study Discovery
-![Nearby](docs/screenshots/desktop-nearby.png)
-
-### Productivity Dashboard & Personal Pomodoro Focus
-![Productivity](docs/screenshots/desktop-productivity.png)
-
-### Mobile Responsive Viewport
-![Mobile View](docs/screenshots/mobile-landing.png)
-
-> To regenerate screenshots across all pages for mobile and desktop viewports, run:
-> ```bash
-> python scripts/capture_screenshots.py
-> ```
-> The script requires a running local server (`python run.py`) and a dev install of Playwright (`pip install playwright && playwright install chromium`).
-
----
-
-## License
-
-MIT © StudyConnect Team
-
+# StudyConnect
+
+A full-stack social learning and study platform for students to connect, learn, and grow together.
+
+## 🚀 Live Demo
+
+🌐 **[Visit StudyConnect](https://studyconnect-production-c8e6.up.railway.app/)**
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat-square&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat-square&logo=railway&logoColor=white)
+
+## 📖 Project Overview
+
+StudyConnect is a comprehensive social learning platform designed to help students collaborate effectively. The platform allows users to:
+- Create accounts and build their study profile
+- Connect with other students globally
+- Ask and answer academic questions
+- Participate in dedicated study communities and groups
+- Discover nearby study opportunities and peers
+- Communicate via direct messages
+- Track productivity and study activity
+- Earn points, maintain study streaks, and view leaderboards
+- Receive notifications for important interactions
+
+## ✨ Main Features
+
+### 🔐 Authentication
+- User Registration and Login/Logout
+- Secure password handling and hashing
+- Flask-Login based session management
+- Password reset functionality
+- *Note: Email verification infrastructure is built but currently postponed for a future update due to SMTP connectivity restrictions in the Railway environment.*
+
+### ❓ Questions & Answers
+- Post academic questions with detailed descriptions
+- Answer questions from peers
+- Rich text formatting for technical clarity
+- Earn points for participating in discussions
+
+### 👥 Community & Connections
+- Send and accept connection requests
+- View user profiles and mutual connections
+- Join or create study groups based on specific subjects
+- Participate in group discussions and collaborative learning
+
+### 📍 Nearby Study Discovery
+- Discover study opportunities and peers near your location
+- Find study spots or groups operating in your local area
+
+### 💬 Real-Time Communication
+- WebSocket-based direct messaging using Flask-SocketIO
+- Real-time updates for active conversations
+
+### 🏆 Points & Leaderboard
+- Gamified learning with a points system for asking/answering questions
+- Maintain daily study streaks
+- View global leaderboards to compare productivity with peers
+
+### ⏱️ Productivity
+- Dedicated productivity tools to track study sessions
+- Log study hours and monitor personal progress
+
+### 🔔 Notifications
+- Receive alerts for new messages, connection requests, and question replies
+- Real-time notification updates across the platform
+
+## 🛠️ Technology Stack
+
+| Category | Technologies |
+| :--- | :--- |
+| **Frontend** | HTML5, CSS3, JavaScript, Jinja2 Templates |
+| **Backend** | Python, Flask, Flask-SQLAlchemy, Flask-Login, Flask-Mail, Flask-WTF, Flask-SocketIO |
+| **Database** | PostgreSQL (Supabase) |
+| **Caching / Real-time** | Redis, Flask-Caching, Socket.IO, Gevent, Gevent-WebSocket |
+| **Deployment** | Railway, Docker, Gunicorn |
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    Client[User Browser] -->|HTTPS / WSS| Railway[Railway Platform]
+    Railway --> Web[Flask + Gunicorn / Gevent]
+    
+    Web -->|Read/Write| DB[(PostgreSQL / Supabase)]
+    Web -->|Cache / PubSub| Redis[(Redis)]
+    Web -->|Real-time| Sockets[Socket.IO Engine]
+```
+
+- **Client:** Users access the platform via standard web browsers.
+- **Railway:** Handles SSL termination and routes traffic to the application container.
+- **Flask + Gunicorn:** The core Python application serving rendered HTML and handling API logic, using Gevent for asynchronous worker support.
+- **PostgreSQL:** Primary relational database hosted on Supabase for persistent data storage.
+- **Redis:** In-memory data store used for fast caching (e.g., homepage statistics) and Socket.IO message brokering.
+
+## 📂 Project Structure
+
+```text
+StudyConnect/
+├── app/
+│   ├── answers/          # Answer submission and logic
+│   ├── api/              # API endpoints for frontend functionality
+│   ├── auth/             # Authentication and user management
+│   ├── connections/      # User networking and friend requests
+│   ├── groups/           # Study communities and group chats
+│   ├── leaderboard/      # Points, streaks, and rankings
+│   ├── main/             # Homepage and core views
+│   ├── messages/         # Direct messaging system
+│   ├── models/           # SQLAlchemy database models
+│   ├── nearby/           # Location-based study discovery
+│   ├── notifications/    # User alerts and system notifications
+│   ├── points/           # Gamification logic
+│   ├── productivity/     # Study tracking and timers
+│   ├── questions/        # Q&A forum functionality
+│   ├── static/           # CSS, JavaScript, and images
+│   └── templates/        # Jinja2 HTML templates
+├── migrations/           # Alembic database migration scripts
+├── Dockerfile            # Docker configuration for deployment
+├── docker-compose.yml    # Local development services (Postgres/Redis)
+├── gunicorn_config.py    # WSGI server configuration
+├── requirements.txt      # Python dependencies
+├── run.py                # Application entry point
+└── DEPLOYMENT.md         # Detailed deployment instructions
+```
+
+## 💻 Local Development Setup
+
+Follow these steps to run StudyConnect locally on Windows:
+
+1. **Clone the repository:**
+   ```powershell
+   git clone <repository-url>
+   cd StudyConnect
+   ```
+
+2. **Create a virtual environment:**
+   ```powershell
+   python -m venv venv
+   ```
+
+3. **Activate the virtual environment:**
+   ```powershell
+   .\venv\Scripts\Activate.ps1
+   ```
+
+4. **Install requirements:**
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+5. **Configure environment variables:**
+   - Copy `.env.example` to a new file named `.env`.
+   - Update the placeholder values (see Environment Variables section below).
+
+6. **Configure Database & Redis (Optional but recommended):**
+   - You can run PostgreSQL and Redis locally using the provided `docker-compose.yml` file:
+     ```powershell
+     docker-compose up -d
+     ```
+
+7. **Run database migrations:**
+   ```powershell
+   flask db upgrade
+   ```
+
+8. **Start the Flask application:**
+   ```powershell
+   python run.py
+   ```
+   The application will be available at `http://localhost:5000`.
+
+## 🔐 Environment Variables
+
+Create a `.env` file in the root directory based on `.env.example`. 
+
+**Important:** Never commit your actual `.env` file or expose database credentials, API keys, or email passwords.
+
+```env
+# Flask Configuration
+SECRET_KEY=your_secure_random_string
+FLASK_APP=run.py
+FLASK_ENV=development
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+
+# Redis (Caching & WebSockets)
+REDIS_URL=redis://localhost:6379/0
+
+# Mail Configuration
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=1
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_SUPPRESS_SEND=1 # Set to 1 in dev to print emails to console
+
+# Upload Settings
+MAX_CONTENT_LENGTH=5242880
+UPLOAD_FOLDER=app/static/uploads
+```
+
+## 🗄️ Database
+
+StudyConnect uses **PostgreSQL** for persistent data storage. The production database is securely hosted on **Supabase**. 
+
+Database schema changes are managed using **Flask-Migrate** (Alembic). Always run `flask db upgrade` after pulling new changes to ensure your local schema is up to date.
+
+## ⚡ Redis
+
+**Redis** is utilized in this project for two primary purposes:
+1. **Caching:** Fast retrieval of homepage statistics and frequently accessed data to reduce database load (via Flask-Caching).
+2. **WebSockets:** Acting as a message broker for Flask-SocketIO to manage real-time communication seamlessly.
+
+## 🚢 Deployment
+
+StudyConnect is currently deployed and running in a production environment.
+
+- **Hosting Platform:** [Railway](https://railway.app/)
+- **Infrastructure:** Docker-based deployment using the provided `Dockerfile`.
+- **Web Server:** Gunicorn utilizing `GeventWebSocketWorker` to support persistent WebSocket connections alongside standard HTTP requests.
+- **Database:** Supabase (PostgreSQL).
+- **Caching/Broker:** Railway-provisioned Redis service.
+
+Because the application relies heavily on real-time WebSockets, Railway provides an excellent persistent hosting environment.
+
+🌐 **Live Website:** [https://studyconnect-production-c8e6.up.railway.app/](https://studyconnect-production-c8e6.up.railway.app/)
+
+## 📌 Current Status
+
+StudyConnect is currently deployed and accessible through the live Railway URL. 
+
+The core application—including authentication, Q&A, communities, messaging, and productivity tracking—is fully operational. 
+
+*Note: Email verification via Gmail SMTP is planned for a future update, as direct SMTP connectivity from the current Railway environment is presently restricted.*
+
+## 🗺️ Roadmap
+
+### Version 1 (Current)
+- [x] Core authentication
+- [x] Questions & answers
+- [x] Communities/groups
+- [x] Connections
+- [x] Messaging
+- [x] Nearby discovery
+- [x] Notifications
+- [x] Points and leaderboard
+- [x] Productivity tracking
+- [x] Redis caching
+- [x] Railway deployment
+- [x] Supabase PostgreSQL
+
+### Version 2 (Planned)
+- [ ] Production-ready email verification
+- [ ] Improved email delivery using a transactional email provider (e.g., Brevo/SendGrid)
+- [ ] Advanced performance optimization
+- [ ] Better cache invalidation strategies
+- [ ] Additional UI/UX improvements
+- [ ] Expanded automated testing and monitoring
+
+## 🛡️ Security
+
+Security best practices implemented in StudyConnect:
+- **Environment Secrets:** All sensitive keys and URIs are managed via environment variables.
+- **Password Hashing:** Passwords are securely hashed before storage.
+- **CSRF Protection:** All forms are protected against Cross-Site Request Forgery using Flask-WTF.
+- **Route Protection:** Authentication is enforced on sensitive endpoints using Flask-Login.
+- **Data Protection:** Database credentials and the `.env` file are strictly ignored in version control.
+
+## 🤝 Contributing
+
+Contributions are welcome! To contribute:
+
+1. **Fork** the repository.
+2. **Create a branch** for your feature or bug fix (`git checkout -b feature/my-new-feature`).
+3. **Make changes** and test them locally.
+4. **Commit** your changes (`git commit -m 'Add some feature'`).
+5. **Push** to the branch (`git push origin feature/my-new-feature`).
+6. **Submit a Pull Request** for review.
+
+## 📄 License
+
+Licensing information will be added separately.
+
+## 🔗 Project Links
+
+🌐 **Live Website:** [https://studyconnect-production-c8e6.up.railway.app/](https://studyconnect-production-c8e6.up.railway.app/)  
+💻 **GitHub Repository:** Please refer to the repository URL where this README is hosted.
