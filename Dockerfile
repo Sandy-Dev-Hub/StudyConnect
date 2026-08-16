@@ -50,9 +50,9 @@ RUN mkdir -p app/static/uploads instance && chown -R studyconnect:studyconnect a
 
 USER studyconnect
 
-EXPOSE 5000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:5000/api/health || exit 1
+    CMD curl -f http://localhost:${PORT}/api/health || exit 1
 
 CMD ["gunicorn", "-c", "gunicorn_config.py", "run:app"]
