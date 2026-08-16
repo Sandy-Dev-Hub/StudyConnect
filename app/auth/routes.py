@@ -5,7 +5,7 @@ from app.auth import auth_bp
 from app.auth.forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 from app.auth.services import send_verification_email, send_reset_email
 from app.models.user import User
-from app.extensions import db
+from app.extensions import db, cache
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -28,6 +28,8 @@ def register():
         else:
             db.session.add(user)
             db.session.commit()
+            cache.delete('home:statistics')
+            
             send_verification_email(user)
             if current_app.config.get('MAIL_SUPPRESS_SEND'):
                 flash('Account created! Check the console for the verification link.', 'success')

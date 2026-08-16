@@ -29,7 +29,7 @@ def home():
     if stats is None:
         stats = {
             'total_questions': Question.query.count(),
-            'total_users': User.query.filter(User.last_active_date.is_not(None)).count()
+            'total_users': User.query.count()
         }
         cache.set('home:statistics', stats, timeout=300)
 
