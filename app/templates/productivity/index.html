@@ -157,18 +157,16 @@
             </div>
 
             <!-- Control Buttons (Active State) -->
-            <div id="controls-active" class="d-flex justify-content-center gap-3 d-none">
-                <button id="btn-pause" class="btn control-btn btn-outline-light">
-                    <i class="bi bi-pause-fill me-1"></i> Pause
-                </button>
-                <button id="btn-resume" class="btn control-btn btn-start d-none">
-                    <i class="bi bi-play-fill me-1"></i> Resume
+            <div id="controls-active" class="d-flex justify-content-center gap-3 flex-wrap d-none">
+                <button id="btn-pause-resume" class="btn control-btn btn-outline-light">
+                    <i id="pause-resume-icon" class="bi bi-pause-fill me-1"></i>
+                    <span id="pause-resume-text">Pause</span>
                 </button>
                 <button id="btn-stop" class="btn control-btn btn-outline-danger">
                     <i class="bi bi-stop-fill me-1"></i> Stop
                 </button>
                 <button id="btn-reset-active" class="btn control-btn btn-outline-secondary">
-                    <i class="bi-arrow-counterclockwise me-1"></i> Reset
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                 </button>
             </div>
         </div>
@@ -226,8 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const display = document.getElementById('timer-display');
     const btnStart = document.getElementById('btn-start');
-    const btnPause = document.getElementById('btn-pause');
-    const btnResume = document.getElementById('btn-resume');
+    const btnPauseResume = document.getElementById('btn-pause-resume');
+    const pauseResumeIcon = document.getElementById('pause-resume-icon');
+    const pauseResumeText = document.getElementById('pause-resume-text');
     const btnStop = document.getElementById('btn-stop');
     const btnResetIdle = document.getElementById('btn-reset-idle');
     const btnResetActive = document.getElementById('btn-reset-active');
@@ -309,14 +308,24 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (isRunning) {
             controlsIdle.classList.add('d-none');
             controlsActive.classList.remove('d-none');
-            btnPause.classList.remove('d-none');
-            btnResume.classList.add('d-none');
+            
+            // Set to Pause mode
+            btnPauseResume.classList.remove('btn-start');
+            btnPauseResume.classList.add('btn-outline-light');
+            pauseResumeIcon.className = 'bi bi-pause-fill me-1';
+            pauseResumeText.textContent = 'Pause';
+            
             display.classList.add('running');
         } else if (isPaused) {
             controlsIdle.classList.add('d-none');
             controlsActive.classList.remove('d-none');
-            btnPause.classList.add('d-none');
-            btnResume.classList.remove('d-none');
+            
+            // Set to Resume mode
+            btnPauseResume.classList.remove('btn-outline-light');
+            btnPauseResume.classList.add('btn-start');
+            pauseResumeIcon.className = 'bi bi-play-fill me-1';
+            pauseResumeText.textContent = 'Resume';
+            
             display.classList.remove('running');
         }
     }
@@ -483,8 +492,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     btnStart.addEventListener('click', () => startTimer(true));
-    btnPause.addEventListener('click', pauseTimer);
-    btnResume.addEventListener('click', () => startTimer(true));
+    
+    btnPauseResume.addEventListener('click', () => {
+        if (isRunning) {
+            pauseTimer();
+        } else if (isPaused) {
+            startTimer(true);
+        }
+    });
+
     btnStop.addEventListener('click', stopTimer);
     btnResetIdle.addEventListener('click', stopTimer);
     btnResetActive.addEventListener('click', stopTimer);
