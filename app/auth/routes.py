@@ -32,9 +32,9 @@ def register():
             
             send_verification_email(user)
             if current_app.config.get('MAIL_SUPPRESS_SEND'):
-                flash('Account created! Check the console for the verification link.', 'success')
+                flash('Account created successfully!', 'success')
             else:
-                flash('Account created! Please check your email for the verification link.', 'success')
+                flash('Account created successfully!', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html', form=form)

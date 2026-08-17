@@ -24,11 +24,9 @@
                     <!-- Display Name -->
                     <div class="mb-3 text-start">
                         <label for="onboardDisplayName" class="form-label small text-muted text-uppercase fw-bold mb-1">Display Name</label>
-                        <div class="input-group">
-                            <span class="input-group-text glass-input border-secondary border-opacity-25 text-muted">
-                                <i class="bi bi-person-badge"></i>
-                            </span>
-                            <input type="text" class="form-control glass-input" id="onboardDisplayName" name="display_name" placeholder="Choose a unique name..." required minlength="3" maxlength="80">
+                        <div class="position-relative">
+                            <i class="bi bi-person-badge position-absolute top-50 translate-middle-y text-muted" style="left: 1rem; font-size: 1.2rem; pointer-events: none;"></i>
+                            <input type="text" class="form-control glass-input w-100" id="onboardDisplayName" name="display_name" placeholder="Enter your username" required minlength="3" maxlength="80" style="height: 52px; padding-left: 3rem; border-radius: 0.75rem;">
                         </div>
                         <div class="invalid-feedback text-start" id="displayNameFeedback"></div>
                     </div>

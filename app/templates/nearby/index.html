@@ -332,7 +332,9 @@
         let lastShareSentAt = 0;   // epoch-ms of the last successful POST
         let lastSentLat    = null; // lat of the last position sent
         let lastSentLng    = null; // lng of the last position sent
-        const SHARE_INTERVAL_MS = 6000;   // minimum ms between network calls
+        const SHARE_INTERVAL_MS = 12000;  // 12s → max 5 req/min, well under the 10/min backend limit
+        let shareBackoffUntil = 0; // epoch-ms; skip sending until this passes
+        let rateLimitToastActive = false; // Prevents stacking duplicate rate-limit toasts
         const SHARE_DISTANCE_M  = 15;     // movement threshold in metres
 
         // Fast great-circle approximation (equirectangular) — good to ~0.5 % at city-scale distances.
@@ -692,9 +694,14 @@
                     // Always update the local marker — never throttle the visual.
                     updateUserMarker(myLat, myLng, accuracy);
 
-                    // Throttle the network call: send only if ≥6 s have elapsed
+                    // Throttle the network call: send only if ≥12 s have elapsed
                     // OR the device has moved ≥15 m since the last sent position.
                     const now = Date.now();
+                    
+                    if (now < shareBackoffUntil) {
+                        return; // still in backoff window, skip this send entirely
+                    }
+
                     const elapsed = now - lastShareSentAt;
                     const moved   = (lastSentLat !== null)
                         ? approxDistanceMetres(lastSentLat, lastSentLng, myLat, myLng)
@@ -757,6 +764,13 @@
             }
         }
 
+        function showRateLimitedToast(message) {
+            if (rateLimitToastActive) return; // don't stack duplicates
+            rateLimitToastActive = true;
+            showToast('warning', 'Location Error', message);
+            setTimeout(() => { rateLimitToastActive = false; }, 15000); // allow a new one after 15s
+        }
+
         function sendShareToServer(lat, lng, accuracy = null) {
             const subject = document.getElementById('shareSubject').value;
             const exam = document.getElementById('shareExam').value;
@@ -783,7 +797,10 @@
                     updateSharingUI(true, data.data.expires_at);
                     fetchNearbyStudents();
                 } else {
-                    showToast('warning', 'Location Error', data.message || 'Could not update location.');
+                    if (data.error_code === 'RATE_LIMIT_EXCEEDED' || /rate limit/i.test(data.message || '')) {
+                        shareBackoffUntil = Date.now() + 30000; // back off 30s after a rate-limit hit
+                    }
+                    showRateLimitedToast(data.message || 'Could not update location.');
                 }
             })
             .catch(err => console.error('[LOCATION SHARE ERROR]', err));
@@ -849,7 +866,7 @@
                 });
         }
 
-        function renderStudents(students) {
+        async function renderStudents(students) {
             const activeUids = new Set(students.map(s => s.user_id));
 
             // Remove markers for students no longer active/in radius
@@ -872,19 +889,27 @@
                     </div>`;
                 return;
             }
+            
+            const getIconHtml = (s) => new Promise(resolve => {
+                if (!s.avatar_url) {
+                    resolve(`<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`);
+                    return;
+                }
+                const probe = new Image();
+                probe.onload = () => resolve(`<div class="custom-avatar-marker" style="background-image: url('${s.avatar_url}');"><div class="marker-pulse"></div></div>`);
+                probe.onerror = () => resolve(`<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`);
+                probe.src = s.avatar_url;
+            });
 
             let html = '';
-            students.forEach(s => {
-                let iconHtml;
-                if (s.avatar_url) {
-                    iconHtml = `<div class="custom-avatar-marker" style="background-image: url('${s.avatar_url}');"><div class="marker-pulse"></div></div>`;
-                } else {
-                    iconHtml = `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`;
-                }
-
+            // Using a for...of loop to support async/await sequentially
+            for (const s of students) {
+                const iconHtml = await getIconHtml(s);
+                
+                const fallbackPopup = `<div class="nav-avatar mx-auto mb-2" style="background-color: ${s.avatar_color}; width: 48px; height: 48px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
                 let popupAvatar = s.avatar_url
-                    ? `<img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;">`
-                    : `<div class="nav-avatar mx-auto mb-2" style="background-color: ${s.avatar_color}; width: 48px; height: 48px; font-size: 1.2rem;">${s.initials}</div>`;
+                    ? `<img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;" onerror="this.outerHTML = '${fallbackPopup}'">`
+                    : fallbackPopup;
 
                 const popupHtml = `
                     <div class="p-1 text-center">
@@ -912,9 +937,10 @@
                     peerMarkers[s.user_id] = marker;
                 }
 
+                const fallbackListAvatar = `<div class="nav-avatar border border-warning flex-shrink-0 d-flex align-items-center justify-content-center fw-bold" style="background-color: ${s.avatar_color}; width: 50px; height: 50px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
                 let listAvatar = s.avatar_url
-                    ? `<img src="${s.avatar_url}" class="rounded-circle border border-warning" width="50" height="50" style="object-fit: cover; flex-shrink: 0;">`
-                    : `<div class="nav-avatar border border-warning flex-shrink-0 d-flex align-items-center justify-content-center fw-bold" style="background-color: ${s.avatar_color}; width: 50px; height: 50px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
+                    ? `<img src="${s.avatar_url}" class="rounded-circle border border-warning" width="50" height="50" style="object-fit: cover; flex-shrink: 0;" onerror="this.outerHTML = '${fallbackListAvatar}'">`
+                    : fallbackListAvatar;
 
                 html += `
                     <div class="student-card d-flex align-items-center justify-content-between">
@@ -933,7 +959,9 @@
                             <i class="bi bi-send-fill"></i>
                         </button>
                     </div>`;
-            });
+                        </button>
+                    </div>`;
+            }
 
             listContainer.innerHTML = html;
 

@@ -70,6 +70,25 @@
     background: rgba(234, 133, 40, 0.15);
     border-left: 4px solid #EA8528;
 }
+
+@media (max-width: 767.98px) {
+    .chat-container {
+        height: calc(100dvh - 70px);
+        min-height: auto;
+    }
+    .chat-sidebar {
+        display: block;
+    }
+    .chat-main {
+        display: none !important;
+    }
+    .mobile-chat-active .chat-sidebar {
+        display: none !important;
+    }
+    .mobile-chat-active .chat-main {
+        display: flex !important;
+    }
+}
 </style>
 {% endblock %}
 
@@ -94,7 +113,7 @@
                                  data-type="dm" data-id="{{ c.other_user.id }}" data-username="{{ c.other_user.username }}">
                                 <div class="position-relative flex-shrink-0">
                                     {% if c.other_user.profile and c.other_user.profile.avatar_filename %}
-                                        <img src="{{ url_for('static', filename='uploads/avatars/' + c.other_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 42px; height: 42px; object-fit: cover;">
+                                        <img src="{{ url_for('static', filename='uploads/avatars/' + c.other_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 42px; height: 42px; object-fit: cover;" onerror="this.outerHTML = '<div class=\'nav-avatar d-flex align-items-center justify-content-center\' style=\'width: 42px; height: 42px; font-size: 1.1rem; background-color: {{ c.other_user.avatar_color }};\'>{{ c.other_user.initials }}</div>';">
                                     {% else %}
                                         <div class="nav-avatar d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem; background-color: {{ c.other_user.avatar_color }};">
                                             {{ c.other_user.initials }}
@@ -151,6 +170,7 @@
                     <!-- Header -->
                     <div id="chat-header" class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center bg-dark bg-opacity-25">
                         <div class="d-flex align-items-center gap-3">
+                            <button id="mobile-back-btn" class="btn btn-sm btn-outline-light d-md-none border-0 px-2 me-1"><i class="bi bi-arrow-left fs-5"></i></button>
                             <div id="chat-header-avatar" class="d-none"></div>
                             <div>
                                 <h5 id="chat-header-title" class="mb-0 text-white">Select a conversation</h5>
@@ -332,6 +352,9 @@ document.addEventListener('DOMContentLoaded', function() {
         currentTargetId = id;
         socket.emit('join_chat', { type: type, target_id: id });
 
+        // Activates mobile chat view
+        document.querySelector('.chat-container').classList.add('mobile-chat-active');
+
         document.getElementById('chat-input-container').classList.remove('d-none');
         const headerTitle = document.getElementById('chat-header-title');
         const headerSub = document.getElementById('chat-header-subtitle');
@@ -502,6 +525,27 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Unable to retrieve your location');
         }, { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 });
     });
+
+    // Mobile Back Button
+    const mobileBackBtn = document.getElementById('mobile-back-btn');
+    if (mobileBackBtn) {
+        mobileBackBtn.addEventListener('click', () => {
+            document.querySelector('.chat-container').classList.remove('mobile-chat-active');
+            
+            if (currentChatType && currentTargetId) {
+                socket.emit('leave_chat', { type: currentChatType, target_id: currentTargetId });
+            }
+            currentChatType = null;
+            currentTargetId = null;
+            
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('chat-input-container').classList.add('d-none');
+            document.getElementById('chat-header-title').textContent = 'Select a conversation';
+            document.getElementById('chat-header-subtitle').textContent = 'Choose a direct message or study group chat from the sidebar';
+            document.getElementById('chat-messages').innerHTML = '<div class="text-center my-auto text-muted"><i class="bi bi-chat-dots display-3 mb-3 d-block opacity-50"></i><p>Real-time messaging is ready. Select a conversation to start chatting!</p></div>';
+        });
+    }
 
     // Check if auto-open requested via URL parameters
     {% if active_user %}
