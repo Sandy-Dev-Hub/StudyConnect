@@ -74,5 +74,6 @@ class Message(db.Model):
             'location_lat': self.location_lat,
             'location_lng': self.location_lng,
             'is_read': self.is_read,
-            'created_at': self.created_at.strftime('%I:%M %p')
+            'created_at': self.created_at.strftime('%I:%M %p'),
+            'created_at_iso': self.created_at.isoformat() + 'Z' if self.created_at else None
         }

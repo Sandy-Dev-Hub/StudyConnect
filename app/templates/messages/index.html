@@ -210,7 +210,7 @@
                     </div>
 
                     <!-- Input Form -->
-                    <div id="chat-input-container" class="px-2 py-3 px-md-3 d-none w-100" style="background-color: #0d0d0d;">
+                    <div id="chat-input-container" class="px-1 py-2 px-md-3 d-none w-100" style="background-color: #0d0d0d;">
                         <form id="chat-form" class="d-flex align-items-center rounded-pill px-2 py-1 shadow-sm mx-auto w-100" style="border: 1px solid #EA8528; max-width: 900px; background-color: #1a1a1a;" onsubmit="return false;">
                             <div class="dropdown flex-shrink-0">
                                 <button class="btn border-0 rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach" style="width: 44px; height: 44px; color: #EA8528;">
@@ -467,7 +467,15 @@ document.addEventListener('DOMContentLoaded', function() {
             tickHtml = `<span class="read-tick ms-1">${msg.is_read ? '&#10003;&#10003;' : '&#10003;'}</span>`;
         }
         
-        div.innerHTML = `${headerHtml}${bodyHtml}<div class="text-end mt-1" style="font-size: 0.65rem; opacity: 0.75;">${msg.created_at}${tickHtml}</div>`;
+        let timeStr = msg.created_at;
+        if (msg.created_at_iso) {
+            const d = new Date(msg.created_at_iso);
+            if (!isNaN(d)) {
+                timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            }
+        }
+        
+        div.innerHTML = `${headerHtml}${bodyHtml}<div class="text-end mt-1" style="font-size: 0.65rem; opacity: 0.75;">${timeStr}${tickHtml}</div>`;
         messagesBox.appendChild(div);
     }
 
