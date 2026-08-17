@@ -153,6 +153,8 @@
                     Location</button>
                 <button id="stopBtn" class="btn btn-outline-danger d-none"><i class="bi bi-stop-circle me-1"></i>
                     Stop</button>
+                <button id="retryBtn" class="btn btn-outline-warning d-none"><i class="bi bi-arrow-clockwise me-1"></i>
+                    Try Again</button>
             </div>
         </div>
     </div>
@@ -482,6 +484,7 @@
             const sub = document.getElementById('statusSubtitle');
             const shareBtn = document.getElementById('shareBtn');
             const stopBtn = document.getElementById('stopBtn');
+            const retryBtn = document.getElementById('retryBtn');
 
             if (sharing) {
                 // ── State 2: Accurate / active ──────────────────────────
@@ -497,6 +500,10 @@
                 if (stopBtn) {
                     stopBtn.classList.remove('d-none');
                     stopBtn.style.setProperty('display', 'inline-flex', 'important');
+                }
+                if (retryBtn) {
+                    retryBtn.classList.add('d-none');
+                    retryBtn.style.setProperty('display', 'none', 'important');
                 }
             } else {
                 // ── State 1 / idle: not sharing ─────────────────────────
@@ -517,6 +524,10 @@
                 if (stopBtn) {
                     stopBtn.classList.add('d-none');
                     stopBtn.style.setProperty('display', 'none', 'important');
+                }
+                if (retryBtn) {
+                    retryBtn.classList.add('d-none');
+                    retryBtn.style.setProperty('display', 'none', 'important');
                 }
 
                 if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
@@ -570,6 +581,7 @@
             // Show Stop button (user can cancel while searching), hide Share button.
             const shareBtn = document.getElementById('shareBtn');
             const stopBtn  = document.getElementById('stopBtn');
+            const retryBtn = document.getElementById('retryBtn');
             if (shareBtn) {
                 shareBtn.classList.add('d-none');
                 shareBtn.style.setProperty('display', 'none', 'important');
@@ -582,6 +594,15 @@
             // Start the 20-second “stuck” hint timer only once per search session.
             if (!stuckHintShown && stuckHintTimer === null) {
                 searchingStartedAt = Date.now();
+
+                // 10-second timer to show the "Try Again" button
+                setTimeout(() => {
+                    if (gpsState === 'searching' && retryBtn) {
+                        retryBtn.classList.remove('d-none');
+                        retryBtn.style.setProperty('display', 'inline-flex', 'important');
+                    }
+                }, 10000);
+
                 stuckHintTimer = setTimeout(() => {
                     // Only escalate if we’re still searching — not if an accurate
                     // fix already arrived and moved us to the 'accurate' state.
@@ -590,8 +611,10 @@
                     const subEl = document.getElementById('statusSubtitle');
                     if (subEl) {
                         subEl.textContent =
-                            'Still searching… If you’re on a laptop or desktop, GPS accuracy is often limited. ' +
-                            'For the best experience, try StudyConnect on your phone with Wi‑Fi and Location Services turned on.';
+                            'Still searching… A strong GPS fix can take a moment, especially indoors. ' +
+                            'Try moving near a window or outdoors, make sure Location Services and ' +
+                            'Precise/High-accuracy Location are turned on for this browser, and turn ' +
+                            'Wi-Fi on (even without connecting to a network) to speed up the fix.';
                     }
                 }, STUCK_HINT_MS);
             }
@@ -755,6 +778,25 @@
                     }
                 });
         });
+
+        // Retry Location Button
+        const retryBtnEl = document.getElementById('retryBtn');
+        if (retryBtnEl) {
+            retryBtnEl.addEventListener('click', () => {
+                if (watchId !== null && navigator.geolocation) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                _cancelStuckHintTimer();
+                stuckHintShown = false;
+                
+                // Hide retry button immediately when clicked
+                retryBtnEl.classList.add('d-none');
+                retryBtnEl.style.setProperty('display', 'none', 'important');
+                
+                startLiveLocationTracking();
+            });
+        }
 
         // Fetch Nearby Students
         function fetchNearbyStudents() {
