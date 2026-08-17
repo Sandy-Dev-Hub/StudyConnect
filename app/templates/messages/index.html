@@ -182,12 +182,12 @@
                 <!-- Main Chat Window -->
                 <div class="col-md-8 col-lg-9 chat-main position-relative">
                     <!-- Header -->
-                    <div id="chat-header" class="p-3 border-bottom border-secondary border-opacity-25 d-flex flex-column flex-md-row justify-content-md-start align-items-center position-relative" style="background-color: #121212;">
-                        <button id="mobile-back-btn" class="btn btn-sm btn-link text-warning p-0 position-absolute top-0 start-0 m-3 d-md-none text-decoration-none" style="z-index: 10;">
+                    <div id="chat-header" class="p-3 d-flex flex-column flex-md-row justify-content-md-start align-items-center position-relative" style="background-color: #0d0d0d;">
+                        <button id="mobile-back-btn" class="btn btn-sm btn-link p-0 position-absolute top-0 start-0 m-3 d-md-none text-decoration-none" style="z-index: 10; color: #EA8528;">
                             <i class="bi bi-arrow-left fs-4"></i>
                         </button>
 
-                        <div class="d-flex flex-column flex-md-row align-items-center gap-2 gap-md-3 px-md-3 py-md-2 rounded-pill w-100 w-md-auto mx-auto mx-md-0" style="border: none;">
+                        <div class="d-flex flex-column flex-md-row align-items-center gap-2 gap-md-3 px-md-3 py-md-2 w-100 w-md-auto mx-auto mx-md-0" style="border: none;">
                             <div id="chat-header-avatar" class="position-relative d-none mt-2 mt-md-0 mx-auto mx-md-0 shadow-sm rounded-circle"></div>
                             
                             <div class="text-center text-md-start overflow-hidden w-100">
@@ -198,10 +198,9 @@
                     </div>
 
                     <!-- Messages Box -->
-                    <div id="chat-messages" class="chat-messages" style="background-color: #080808;">
+                    <div id="chat-messages" class="chat-messages" style="background-color: #0d0d0d;">
                         <div class="text-center my-auto text-muted">
-                            <i class="bi bi-chat-dots display-3 mb-3 d-block opacity-50"></i>
-                            <p>Real-time messaging is ready. Select a conversation to start chatting!</p>
+                            <p>No messages in this chat yet. Say hello!</p>
                         </div>
                     </div>
 
@@ -211,11 +210,11 @@
                     </div>
 
                     <!-- Input Form -->
-                    <div id="chat-input-container" class="p-3 d-none w-100" style="background-color: #121212;">
-                        <form id="chat-form" class="d-flex align-items-center bg-dark rounded-pill px-2 py-1 shadow-sm mx-auto w-100" style="border: 1px solid rgba(255,255,255,0.08); max-width: 900px;" onsubmit="return false;">
+                    <div id="chat-input-container" class="p-3 d-none w-100" style="background-color: #0d0d0d;">
+                        <form id="chat-form" class="d-flex align-items-center rounded-pill px-2 py-1 shadow-sm mx-auto w-100" style="border: 1px solid #EA8528; max-width: 900px; background-color: #1a1a1a;" onsubmit="return false;">
                             <div class="dropdown flex-shrink-0">
-                                <button class="btn border-0 text-muted rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach" style="width: 44px; height: 44px;">
-                                    <i class="bi bi-paperclip fs-5"></i>
+                                <button class="btn border-0 rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach" style="width: 44px; height: 44px; color: #EA8528;">
+                                    <i class="bi bi-paperclip fs-4"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-dark shadow-sm border border-secondary border-opacity-25 mb-2">
                                     <li><a class="dropdown-item" href="#" id="btn-attach-image"><i class="bi bi-image me-2 text-primary"></i>Send Image</a></li>
@@ -223,8 +222,8 @@
                                 </ul>
                             </div>
                             <input type="file" id="chat-image-input" accept="image/*" class="d-none">
-                            <input type="text" id="message-input" class="form-control bg-transparent text-light border-0 shadow-none px-2 flex-grow-1" style="min-width: 0;" placeholder="Message" autocomplete="off">
-                            <button type="submit" class="btn btn-glow rounded-circle p-0 ms-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;"><i class="bi bi-send-fill" style="font-size: 1.1rem;"></i></button>
+                            <input type="text" id="message-input" class="form-control bg-transparent text-light border-0 shadow-none px-2 flex-grow-1" style="min-width: 0;" placeholder="Type a message..." autocomplete="off">
+                            <button type="submit" class="btn rounded-circle p-0 ms-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background-color: #EA8528; color: #000;"><i class="bi bi-send" style="font-size: 1.1rem; margin-right: 2px;"></i></button>
                         </form>
                     </div>
                 </div>
@@ -406,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         isOnline = true;
                     }
                     const dotClass = isOnline ? 'online-dot' : 'offline-dot';
-                    avatarHtml += `<span class="online-status-dot ${dotClass} position-absolute border border-dark border-2" style="bottom: 2px; right: 2px; width: 16px; height: 16px;" data-user-id="${data.other_user.id}"></span>`;
+                    avatarHtml += `<span class="online-status-dot ${dotClass} position-absolute rounded-circle" style="bottom: 0; right: 0; width: 16px; height: 16px; border: 2px solid #0d0d0d;" data-user-id="${data.other_user.id}"></span>`;
                     
                     avatarDiv.innerHTML = avatarHtml;
                 } else {
