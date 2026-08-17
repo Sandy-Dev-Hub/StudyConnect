@@ -158,6 +158,8 @@
             </div>
         </div>
     </div>
+    
+    <div id="gps-debug" style="font-size:11px; color:#888; padding:4px;"></div>
 
     <!-- Filter Bar -->
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -294,6 +296,15 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const currentUserId = {{ current_user.id }};
         const MAX_ACCURACY_METERS = 1000;
+
+        function logGpsDebug(message) {
+            const el = document.getElementById('gps-debug');
+            if (el) {
+                const timestamp = new Date().toLocaleTimeString();
+                el.textContent = `[${timestamp}] ${message}`;
+            }
+            console.log('[GPS DEBUG]', message);
+        }
 
         const geoOptions = {
             enableHighAccuracy: true,
@@ -628,10 +639,12 @@
         }
 
         function startLiveLocationTracking() {
+            logGpsDebug('watchPosition setup started');
             const loader = document.getElementById('mapLoader');
             if (loader) loader.classList.remove('d-none');
 
             if (!navigator.geolocation) {
+                logGpsDebug('geolocation API not available');
                 if (loader) loader.classList.add('d-none');
                 showToast('danger', 'Geolocation Error', 'Geolocation is not supported by your browser.');
                 updateSharingUI(false);
@@ -642,11 +655,15 @@
                 navigator.geolocation.clearWatch(watchId);
             }
 
-            watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    if (loader) loader.classList.add('d-none');
+            logGpsDebug('calling watchPosition(geoOptions)');
+            try {
+                watchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        try {
+                            if (loader) loader.classList.add('d-none');
 
-                    const accuracy = pos.coords.accuracy;
+                            const accuracy = pos.coords.accuracy;
+                            logGpsDebug(`reading: acc=${Math.round(accuracy)}m lat=${pos.coords.latitude.toFixed(5)} lng=${pos.coords.longitude.toFixed(5)}`);
 
                     // Reject inaccurate GPS positions (> 1000m radius error)
                     // Do NOT call clearWatch() here — keep the watch alive so the
@@ -686,10 +703,16 @@
                     if (elapsed >= SHARE_INTERVAL_MS || moved >= SHARE_DISTANCE_M) {
                         sendShareToServer(myLat, myLng, accuracy);
                     }
+                } catch (err) {
+                    logGpsDebug(`sync error in success callback: ${err.message}`);
+                    console.error('[GPS SYNC ERROR]', err);
+                }
                 },
                 (err) => {
-                    if (loader) loader.classList.add('d-none');
-                    console.warn('[GEOLOCATION ERROR]', err.code, err.message);
+                    try {
+                        logGpsDebug(`error code=${err.code}: ${err.message}`);
+                        if (loader) loader.classList.add('d-none');
+                        console.warn('[GEOLOCATION ERROR]', err.code, err.message);
 
                     if (err.code === err.PERMISSION_DENIED) {
                         // Permission denied is a permanent, terminal error — stop sharing.
@@ -707,9 +730,17 @@
                         showToast('warning', 'Location Unavailable', errMsg);
                         // Do NOT call stopLiveLocationTracking() — watch stays active.
                     }
+                    } catch (err) {
+                        logGpsDebug(`sync error in error callback: ${err.message}`);
+                        console.error('[GPS ERROR CATCH]', err);
+                    }
                 },
                 geoOptions
             );
+            } catch (err) {
+                logGpsDebug(`sync error calling watchPosition: ${err.message}`);
+                console.error('[GPS WATCH CATCH]', err);
+            }
 
             // Show the searching state immediately so the user sees progress,
             // not a blank control bar, while we wait for the first GPS fix.

@@ -81,6 +81,7 @@ def _register_middleware(app):
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'geolocation=(self)'
 
         # Static asset optimization (caching headers)
         if request.path.startswith('/static/'):
