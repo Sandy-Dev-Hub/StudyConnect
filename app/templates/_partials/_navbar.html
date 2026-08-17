@@ -231,6 +231,14 @@
         <a href="{{ url_for('questions.ask') }}" class="mobile-link {% if request.endpoint == 'questions.ask' %}active{% endif %}">Ask a Question</a>
         <a href="{{ url_for('questions.feed') }}" class="mobile-link {% if request.endpoint == 'questions.feed' %}active{% endif %}">Browse Q&amp;A</a>
         <a href="{{ url_for('groups.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('groups.') %}active{% endif %}">Study Groups</a>
+        <a href="{{ url_for('messages.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('messages.') %}active{% endif %} d-flex align-items-center justify-content-between">
+            Messages
+            {% if current_user.is_authenticated %}
+                <span id="mobile-unread-badge" class="badge rounded-pill bg-warning text-dark {% if not unread_messages_count or unread_messages_count == 0 %}d-none{% endif %}">
+                    {{ unread_messages_count or 0 }}
+                </span>
+            {% endif %}
+        </a>
         <a href="{{ url_for('leaderboard.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('leaderboard.') %}active{% endif %}">Leaderboard</a>
         <a href="{{ url_for('productivity.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('productivity.') %}active{% endif %}">Focus Mode</a>
         <a href="{{ url_for('nearby.index') }}" class="mobile-link {% if request.endpoint and request.endpoint.startswith('nearby.') %}active{% endif %}">Nearby</a>
