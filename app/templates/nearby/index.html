@@ -20,6 +20,11 @@
         overflow: hidden;
         position: relative;
     }
+    @media (max-width: 767.98px) {
+        .map-container {
+            height: 400px;
+        }
+    }
 
     .students-sidebar {
         height: 580px;
@@ -157,12 +162,7 @@
                     <option value="{{ tag }}">{{ tag }}</option>
                     {% endfor %}
                 </select>
-                <button id="shareBtn" class="btn btn-accent"><i class="bi bi-broadcast me-1"></i> Share
-                    Location</button>
-                <button id="stopBtn" class="btn btn-outline-danger d-none"><i class="bi bi-stop-circle me-1"></i>
-                    Stop</button>
-                <button id="retryBtn" class="btn btn-outline-warning d-none"><i class="bi bi-arrow-clockwise me-1"></i>
-                    Try Again</button>
+                <button id="actionBtn" class="btn btn-accent"><i class="bi bi-broadcast me-1"></i> Share Location</button>
             </div>
         </div>
     </div>
@@ -364,72 +364,77 @@
 
         // Initialize Leaflet Map
         function initMap() {
-            const hasInitialLocation = isSharing && myLat !== null && myLng !== null;
-            const initialLat = hasInitialLocation ? myLat : 20.0;
-            const initialLng = hasInitialLocation ? myLng : 0.0;
-            const initialZoom = hasInitialLocation ? 15 : 2;
+            try {
+                const hasInitialLocation = isSharing && myLat !== null && myLng !== null;
+                const initialLat = hasInitialLocation ? myLat : 20.0;
+                const initialLng = hasInitialLocation ? myLng : 0.0;
+                const initialZoom = hasInitialLocation ? 15 : 2;
 
-            map = L.map('nearbyMap', {
-                zoomControl: false,
-                fadeAnimation: true,
-                zoomAnimation: true
-            }).setView([initialLat, initialLng], initialZoom);
+                map = L.map('nearbyMap', {
+                    zoomControl: false,
+                    fadeAnimation: true,
+                    zoomAnimation: true
+                }).setView([initialLat, initialLng], initialZoom);
 
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Custom Recenter Control
-            const RecenterControl = L.Control.extend({
-                options: { position: 'bottomright' },
-                onAdd: function() {
-                    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                    const btn = L.DomUtil.create('a', '', container);
-                    btn.href = '#';
-                    btn.title = 'Center on My Location';
-                    btn.role = 'button';
-                    btn.style.width = '30px';
-                    btn.style.height = '30px';
-                    btn.style.lineHeight = '30px';
-                    btn.style.textAlign = 'center';
-                    btn.style.backgroundColor = '#1a1a19';
-                    btn.style.color = '#EA8528';
-                    btn.style.borderColor = 'rgba(255,255,255,0.2)';
-                    btn.innerHTML = '<i class="bi bi-crosshair"></i>';
+                // Custom Recenter Control
+                const RecenterControl = L.Control.extend({
+                    options: { position: 'bottomright' },
+                    onAdd: function() {
+                        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                        const btn = L.DomUtil.create('a', '', container);
+                        btn.href = '#';
+                        btn.title = 'Center on My Location';
+                        btn.role = 'button';
+                        btn.style.width = '30px';
+                        btn.style.height = '30px';
+                        btn.style.lineHeight = '30px';
+                        btn.style.textAlign = 'center';
+                        btn.style.backgroundColor = '#1a1a19';
+                        btn.style.color = '#EA8528';
+                        btn.style.borderColor = 'rgba(255,255,255,0.2)';
+                        btn.innerHTML = '<i class="bi bi-crosshair"></i>';
 
-                    L.DomEvent.disableClickPropagation(container);
-                    L.DomEvent.on(btn, 'click', (e) => {
-                        L.DomEvent.preventDefault(e);
-                        if (myLat !== null && myLng !== null && isSharing) {
-                            map.setView([myLat, myLng], 16, { animate: true });
-                        } else {
-                            showToast('info', 'Location Needed', 'Please click "Share Location" to acquire high-accuracy GPS position.');
-                        }
-                    });
-                    return container;
+                        L.DomEvent.disableClickPropagation(container);
+                        L.DomEvent.on(btn, 'click', (e) => {
+                            L.DomEvent.preventDefault(e);
+                            if (myLat !== null && myLng !== null && isSharing) {
+                                map.setView([myLat, myLng], 16, { animate: true });
+                            } else {
+                                showToast('info', 'Location Needed', 'Please click "Share Location" to acquire high-accuracy GPS position.');
+                            }
+                        });
+                        return container;
+                    }
+                });
+                map.addControl(new RecenterControl());
+
+                // CartoDB Dark Matter Tiles
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 19
+                }).addTo(map);
+
+                // Smooth map sizing on mobile & desktop
+                setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+                window.addEventListener('resize', () => {
+                    if (map) map.invalidateSize();
+                });
+
+                if (hasInitialLocation) {
+                    hasCenteredMap = true;
+                    updateUserMarker(myLat, myLng, null);
+                    fetchNearbyStudents();
+                    startLiveLocationTracking();
                 }
-            });
-            map.addControl(new RecenterControl());
 
-            // CartoDB Dark Matter Tiles
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
-
-            // Smooth map sizing on mobile & desktop
-            setTimeout(() => { if (map) map.invalidateSize(); }, 200);
-            window.addEventListener('resize', () => {
-                if (map) map.invalidateSize();
-            });
-
-            if (hasInitialLocation) {
-                hasCenteredMap = true;
-                updateUserMarker(myLat, myLng, null);
-                fetchNearbyStudents();
-                startLiveLocationTracking();
+                updateSharingUI(isSharing, expiresAt);
+            } catch (err) {
+                console.error('[MAP INIT ERROR]', err);
+                updateSharingUI(isSharing, expiresAt);
             }
-
-            updateSharingUI(isSharing, expiresAt);
         }
         initMap();
 
@@ -503,9 +508,7 @@
             const dot = document.getElementById('statusDot');
             const title = document.getElementById('statusTitle');
             const sub = document.getElementById('statusSubtitle');
-            const shareBtn = document.getElementById('shareBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            const retryBtn = document.getElementById('retryBtn');
+            const actionBtn = document.getElementById('actionBtn');
 
             if (sharing) {
                 // ── State 2: Accurate / active ──────────────────────────
@@ -514,17 +517,9 @@
                 title.textContent = 'Location Sharing Active';
                 sub.textContent = expiresAt ? `Broadcasting GPS coordinates. Auto-expires at ${new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.` : 'Broadcasting GPS presence.';
 
-                if (shareBtn) {
-                    shareBtn.classList.add('d-none');
-                    shareBtn.style.setProperty('display', 'none', 'important');
-                }
-                if (stopBtn) {
-                    stopBtn.classList.remove('d-none');
-                    stopBtn.style.setProperty('display', 'inline-flex', 'important');
-                }
-                if (retryBtn) {
-                    retryBtn.classList.add('d-none');
-                    retryBtn.style.setProperty('display', 'none', 'important');
+                if (actionBtn) {
+                    actionBtn.className = 'btn btn-outline-danger';
+                    actionBtn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop';
                 }
             } else {
                 // ── State 1 / idle: not sharing ─────────────────────────
@@ -538,17 +533,9 @@
                 title.textContent = 'Location Sharing Offline';
                 sub.textContent = 'Opt-in to share high-accuracy GPS coordinates and discover peers.';
 
-                if (shareBtn) {
-                    shareBtn.classList.remove('d-none');
-                    shareBtn.style.setProperty('display', 'inline-flex', 'important');
-                }
-                if (stopBtn) {
-                    stopBtn.classList.add('d-none');
-                    stopBtn.style.setProperty('display', 'none', 'important');
-                }
-                if (retryBtn) {
-                    retryBtn.classList.add('d-none');
-                    retryBtn.style.setProperty('display', 'none', 'important');
+                if (actionBtn) {
+                    actionBtn.className = 'btn btn-accent';
+                    actionBtn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Share Location';
                 }
 
                 if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
@@ -599,28 +586,22 @@
                 }
             }
 
-            // Show Stop button (user can cancel while searching), hide Share button.
-            const shareBtn = document.getElementById('shareBtn');
-            const stopBtn  = document.getElementById('stopBtn');
-            const retryBtn = document.getElementById('retryBtn');
-            if (shareBtn) {
-                shareBtn.classList.add('d-none');
-                shareBtn.style.setProperty('display', 'none', 'important');
-            }
-            if (stopBtn) {
-                stopBtn.classList.remove('d-none');
-                stopBtn.style.setProperty('display', 'inline-flex', 'important');
+            // Show Stop button (user can cancel while searching).
+            const actionBtn = document.getElementById('actionBtn');
+            if (actionBtn) {
+                actionBtn.className = 'btn btn-outline-danger';
+                actionBtn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop';
             }
 
             // Start the 20-second “stuck” hint timer only once per search session.
             if (!stuckHintShown && stuckHintTimer === null) {
                 searchingStartedAt = Date.now();
 
-                // 10-second timer to show the "Try Again" button
+                // 10-second timer to show the "Try Again" state
                 setTimeout(() => {
-                    if (gpsState === 'searching' && retryBtn) {
-                        retryBtn.classList.remove('d-none');
-                        retryBtn.style.setProperty('display', 'inline-flex', 'important');
+                    if (gpsState === 'searching' && actionBtn) {
+                        actionBtn.className = 'btn btn-outline-warning';
+                        actionBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i> Try Again';
                     }
                 }, 10000);
 
@@ -814,43 +795,44 @@
             .catch(err => console.error('[LOCATION SHARE ERROR]', err));
         }
 
-        // Share Location Button
-        document.getElementById('shareBtn').addEventListener('click', () => {
-            startLiveLocationTracking();
-        });
-
-        // Stop Sharing Button
-        document.getElementById('stopBtn').addEventListener('click', () => {
-            stopLiveLocationTracking();
-            fetch('/nearby/api/stop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        updateSharingUI(false);
-                        showToast('info', 'Sharing Stopped', 'Live location tracking stopped.');
+        // Single Action Button Handler
+        const actionBtn = document.getElementById('actionBtn');
+        if (actionBtn) {
+            actionBtn.addEventListener('click', () => {
+                const text = actionBtn.innerText.toLowerCase();
+                
+                if (text.includes('share')) {
+                    // Start Sharing
+                    startLiveLocationTracking();
+                } else if (text.includes('stop')) {
+                    // Stop Sharing
+                    stopLiveLocationTracking();
+                    fetch('/nearby/api/stop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateSharingUI(false);
+                            showToast('info', 'Sharing Stopped', 'Live location tracking stopped.');
+                        }
+                    });
+                } else if (text.includes('try again')) {
+                    // Retry Sharing
+                    if (watchId !== null && navigator.geolocation) {
+                        navigator.geolocation.clearWatch(watchId);
+                        watchId = null;
                     }
-                });
-        });
-
-        // Retry Location Button
-        const retryBtnEl = document.getElementById('retryBtn');
-        if (retryBtnEl) {
-            retryBtnEl.addEventListener('click', () => {
-                if (watchId !== null && navigator.geolocation) {
-                    navigator.geolocation.clearWatch(watchId);
-                    watchId = null;
+                    _cancelStuckHintTimer();
+                    stuckHintShown = false;
+                    
+                    // Immediately show "Stop" so they know it's retrying
+                    actionBtn.className = 'btn btn-outline-danger';
+                    actionBtn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop';
+                    
+                    startLiveLocationTracking();
                 }
-                _cancelStuckHintTimer();
-                stuckHintShown = false;
-                
-                // Hide retry button immediately when clicked
-                retryBtnEl.classList.add('d-none');
-                retryBtnEl.style.setProperty('display', 'none', 'important');
-                
-                startLiveLocationTracking();
             });
         }
 

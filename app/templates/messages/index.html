@@ -100,26 +100,11 @@
         display: none !important;
     }
     
-    /* Full-screen Takeover Mode for Mobile Chat */
-    body.mobile-chat-active nav.navbar, 
-    body.mobile-chat-active footer, 
-    body.mobile-chat-active .flash-messages,
-    body.mobile-chat-active #toast-container {
+    .mobile-chat-active .chat-sidebar {
         display: none !important;
     }
-    body.mobile-chat-active .content-section {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    body.mobile-chat-active .chat-container {
-        height: 100dvh !important;
-    }
-    body.mobile-chat-active .chat-sidebar {
-        display: none !important;
-    }
-    body.mobile-chat-active .chat-main {
+    .mobile-chat-active .chat-main {
         display: flex !important;
-        height: 100dvh !important;
     }
 }
 #chat-header-avatar {
@@ -142,10 +127,10 @@
 {% block content %}
 <section class="content-section py-0 py-md-3">
     <div class="container px-0 px-md-3" style="max-width: 100%;">
-        <div class="glass-card p-0 overflow-hidden chat-container" style="border: none !important; border-radius: 0 !important; background: transparent !important;">
+        <div class="glass-card p-0 overflow-hidden chat-container" style="border: none !important; border-radius: 0 !important; background: #000 !important;">
             <div class="row g-0 h-100">
                 <!-- Sidebar -->
-                <div class="col-md-4 col-lg-3 chat-sidebar" style="background: #000;">
+                <div class="col-md-4 col-lg-3 chat-sidebar">
                     <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 text-white"><i class="bi bi-chat-dots-fill me-2 text-warning"></i>Messages</h5>
                         <span class="messages-live-badge">LIVE</span>
@@ -215,7 +200,7 @@
                 <!-- Main Chat Window -->
                 <div class="col-md-8 col-lg-9 chat-main position-relative">
                     <!-- Header -->
-                    <div id="chat-header" class="p-3 d-flex flex-column flex-md-row justify-content-md-start align-items-center position-relative" style="background-color: #0d0d0d;">
+                    <div id="chat-header" class="p-3 d-flex flex-column flex-md-row justify-content-md-start align-items-center position-relative">
                         <button id="mobile-back-btn" class="btn btn-sm btn-link p-0 position-absolute top-0 start-0 m-3 d-md-none text-decoration-none" style="z-index: 10; color: #EA8528;">
                             <i class="bi bi-arrow-left fs-4"></i>
                         </button>
@@ -231,7 +216,7 @@
                     </div>
 
                     <!-- Messages Box -->
-                    <div id="chat-messages" class="chat-messages" style="background-color: #0d0d0d;">
+                    <div id="chat-messages" class="chat-messages">
                         <div class="text-center my-auto text-muted">
                             <p>No messages in this chat yet. Say hello!</p>
                         </div>
@@ -243,7 +228,7 @@
                     </div>
 
                     <!-- Input Form -->
-                    <div id="chat-input-container" class="px-1 py-2 px-md-3 d-none w-100" style="background-color: #0d0d0d;">
+                    <div id="chat-input-container" class="px-1 py-2 px-md-3 d-none w-100">
                         <form id="chat-form" class="d-flex align-items-center rounded-pill px-2 py-1 shadow-sm mx-auto w-100" style="border: 1px solid #EA8528; max-width: 900px; background-color: #1a1a1a;" onsubmit="return false;">
                             <div class="dropdown flex-shrink-0">
                                 <button class="btn border-0 rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach" style="width: 44px; height: 44px; color: #EA8528;">
@@ -403,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
         socket.emit('join_chat', { type: type, target_id: id });
 
         // Activates mobile chat view
-        document.body.classList.add('mobile-chat-active');
+        document.querySelector('.chat-container').classList.add('mobile-chat-active');
 
         document.getElementById('chat-input-container').classList.remove('d-none');
         const headerTitle = document.getElementById('chat-header-title');
@@ -611,7 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mobileBackBtn = document.getElementById('mobile-back-btn');
     if (mobileBackBtn) {
         mobileBackBtn.addEventListener('click', function() {
-            document.body.classList.remove('mobile-chat-active');
+            document.querySelector('.chat-container').classList.remove('mobile-chat-active');
             
             if (currentChatType && currentTargetId) {
                 socket.emit('leave_chat', { type: currentChatType, target_id: currentTargetId });
