@@ -72,9 +72,26 @@
 }
 
 @media (max-width: 767.98px) {
+    .content-section.py-3 {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    .container {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }
     .chat-container {
         height: calc(100dvh - 70px);
         min-height: auto;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #000 !important;
+    }
+    .chat-container > .row {
+        border: none !important;
+        border-radius: 0 !important;
     }
     .chat-sidebar {
         display: block;
