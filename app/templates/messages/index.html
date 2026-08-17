@@ -89,6 +89,20 @@
         display: flex !important;
     }
 }
+#chat-header-avatar {
+    width: 76px; height: 76px;
+}
+#chat-header-title {
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; font-size: 1.1rem;
+}
+@media (min-width: 768px) {
+    #chat-header-avatar {
+        width: 42px; height: 42px;
+    }
+    #chat-header-title {
+        text-transform: none; letter-spacing: normal; font-weight: 600; font-size: 0.95rem;
+    }
+}
 </style>
 {% endblock %}
 
@@ -168,19 +182,23 @@
                 <!-- Main Chat Window -->
                 <div class="col-md-8 col-lg-9 chat-main position-relative">
                     <!-- Header -->
-                    <div id="chat-header" class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center bg-dark bg-opacity-25">
-                        <div class="d-flex align-items-center gap-3 bg-dark px-3 py-2 rounded-pill shadow-sm" style="border: 1px solid rgba(255,255,255,0.05); min-width: 200px;">
-                            <button id="mobile-back-btn" class="btn btn-sm btn-outline-secondary d-md-none border-0 rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; flex-shrink: 0; background: rgba(255,255,255,0.03);"><i class="bi bi-arrow-left fs-5 text-light"></i></button>
-                            <div id="chat-header-avatar" class="d-none"></div>
-                            <div class="overflow-hidden">
-                                <h6 id="chat-header-title" class="mb-0 text-white fw-bold text-truncate" style="font-size: 0.95rem;">Select a conversation</h6>
-                                <small id="chat-header-subtitle" class="text-muted text-truncate d-block" style="font-size: 0.75rem;">Choose a direct message or study group chat from the sidebar</small>
+                    <div id="chat-header" class="p-3 border-bottom border-secondary border-opacity-25 d-flex flex-column flex-md-row justify-content-md-start align-items-center position-relative" style="background-color: #121212;">
+                        <button id="mobile-back-btn" class="btn btn-sm btn-link text-warning p-0 position-absolute top-0 start-0 m-3 d-md-none text-decoration-none" style="z-index: 10;">
+                            <i class="bi bi-arrow-left fs-4"></i>
+                        </button>
+
+                        <div class="d-flex flex-column flex-md-row align-items-center gap-2 gap-md-3 px-md-3 py-md-2 rounded-pill w-100 w-md-auto mx-auto mx-md-0" style="border: none;">
+                            <div id="chat-header-avatar" class="position-relative d-none mt-2 mt-md-0 mx-auto mx-md-0 shadow-sm rounded-circle"></div>
+                            
+                            <div class="text-center text-md-start overflow-hidden w-100">
+                                <h6 id="chat-header-title" class="mb-0 text-white text-truncate">Select a conversation</h6>
+                                <small id="chat-header-subtitle" class="text-muted text-truncate d-none d-md-block" style="font-size: 0.75rem;">Choose a direct message or study group chat from the sidebar</small>
                             </div>
                         </div>
                     </div>
 
                     <!-- Messages Box -->
-                    <div id="chat-messages" class="chat-messages">
+                    <div id="chat-messages" class="chat-messages" style="background-color: #080808;">
                         <div class="text-center my-auto text-muted">
                             <i class="bi bi-chat-dots display-3 mb-3 d-block opacity-50"></i>
                             <p>Real-time messaging is ready. Select a conversation to start chatting!</p>
@@ -193,10 +211,10 @@
                     </div>
 
                     <!-- Input Form -->
-                    <div id="chat-input-container" class="p-3 bg-dark bg-opacity-50 d-none">
-                        <form id="chat-form" class="d-flex align-items-center bg-dark rounded-pill px-2 py-1 shadow-sm mx-auto" style="border: 1px solid rgba(255,255,255,0.08); max-width: 900px;" onsubmit="return false;">
-                            <div class="dropdown">
-                                <button class="btn border-0 text-muted rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach" style="width: 40px; height: 40px;">
+                    <div id="chat-input-container" class="p-3 d-none w-100" style="background-color: #121212;">
+                        <form id="chat-form" class="d-flex align-items-center bg-dark rounded-pill px-2 py-1 shadow-sm mx-auto w-100" style="border: 1px solid rgba(255,255,255,0.08); max-width: 900px;" onsubmit="return false;">
+                            <div class="dropdown flex-shrink-0">
+                                <button class="btn border-0 text-muted rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Attach" style="width: 44px; height: 44px;">
                                     <i class="bi bi-paperclip fs-5"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-dark shadow-sm border border-secondary border-opacity-25 mb-2">
@@ -205,8 +223,8 @@
                                 </ul>
                             </div>
                             <input type="file" id="chat-image-input" accept="image/*" class="d-none">
-                            <input type="text" id="message-input" class="form-control bg-transparent text-light border-0 shadow-none px-2" placeholder="Message" autocomplete="off">
-                            <button type="submit" class="btn btn-glow rounded-circle p-0 ms-1 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; flex-shrink: 0;"><i class="bi bi-send-fill" style="font-size: 0.95rem;"></i></button>
+                            <input type="text" id="message-input" class="form-control bg-transparent text-light border-0 shadow-none px-2 flex-grow-1" style="min-width: 0;" placeholder="Message" autocomplete="off">
+                            <button type="submit" class="btn btn-glow rounded-circle p-0 ms-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;"><i class="bi bi-send-fill" style="font-size: 1.1rem;"></i></button>
                         </form>
                     </div>
                 </div>
@@ -372,9 +390,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (type === 'dm') {
                     headerTitle.textContent = data.other_user.username;
                     headerSub.textContent = 'Direct Message';
+                    
+                    const avatarDiv = document.getElementById('chat-header-avatar');
+                    avatarDiv.classList.remove('d-none');
+                    let avatarHtml = '';
+                    if (data.other_user.profile && data.other_user.profile.avatar_filename) {
+                        avatarHtml = `<img src="/static/uploads/avatars/${data.other_user.profile.avatar_filename}" alt="Avatar" class="rounded-circle border border-warning w-100 h-100" style="object-fit: cover;">`;
+                    } else {
+                        avatarHtml = `<div class="nav-avatar w-100 h-100 d-flex align-items-center justify-content-center text-white" style="background-color: ${data.other_user.avatar_color}; font-size: 2rem;">${data.other_user.initials}</div>`;
+                    }
+                    
+                    let isOnline = false;
+                    const sidebarDot = document.querySelector(`.online-status-dot[data-user-id="${data.other_user.id}"]`);
+                    if (sidebarDot && sidebarDot.classList.contains('online-dot')) {
+                        isOnline = true;
+                    }
+                    const dotClass = isOnline ? 'online-dot' : 'offline-dot';
+                    avatarHtml += `<span class="online-status-dot ${dotClass} position-absolute border border-dark border-2" style="bottom: 2px; right: 2px; width: 16px; height: 16px;" data-user-id="${data.other_user.id}"></span>`;
+                    
+                    avatarDiv.innerHTML = avatarHtml;
                 } else {
                     headerTitle.textContent = data.group.name;
-                    headerSub.textContent = `Study Group &bull; ${data.group.member_count} Members`;
+                    headerSub.textContent = `Study Group \u2022 ${data.group.member_count} Members`;
+                    
+                    const avatarDiv = document.getElementById('chat-header-avatar');
+                    avatarDiv.classList.remove('d-none');
+                    avatarDiv.innerHTML = `<div class="nav-avatar w-100 h-100 d-flex align-items-center justify-content-center text-white bg-secondary" style="font-size: 2rem;"><i class="bi bi-people-fill"></i></div>`;
                 }
 
                 messagesBox.innerHTML = '';
