@@ -2,8 +2,7 @@
 {% block title %}Nearby Study Discovery — StudyConnect{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtz05qHqHqL8nQeZ7e3aWq1eKjX/xU0000000000000000000000000000000000==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
     .nearby-control-bar {
         background: rgba(255, 255, 255, 0.04);
@@ -288,8 +287,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
+    integrity="sha512-BwHqxNdZVsyKmHW60xGgR1pQePE5sL/oX2HJoD0B+zT4A5QzP5sQ5T+9+O01X2wN+1Bv7E5g7E6B+2FkX1r1w==" crossorigin=""></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let map = null;
@@ -419,6 +418,7 @@
 
                 // Smooth map sizing on mobile & desktop
                 setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+                setTimeout(() => { if (map) map.invalidateSize(); }, 800);
                 window.addEventListener('resize', () => {
                     if (map) map.invalidateSize();
                 });
@@ -799,7 +799,7 @@
         const actionBtn = document.getElementById('actionBtn');
         if (actionBtn) {
             actionBtn.addEventListener('click', () => {
-                const text = actionBtn.innerText.toLowerCase();
+                const text = actionBtn.textContent.toLowerCase();
                 
                 if (text.includes('share')) {
                     // Start Sharing
