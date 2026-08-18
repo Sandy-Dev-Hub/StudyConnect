@@ -16,5 +16,14 @@ class UserProfile(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
+    @property
+    def has_valid_avatar(self):
+        import os
+        from flask import current_app
+        if not self.avatar_filename:
+            return False
+        filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'avatars', self.avatar_filename)
+        return os.path.exists(filepath)
+
     def __repr__(self):
         return f'<UserProfile user_id={self.user_id}>'

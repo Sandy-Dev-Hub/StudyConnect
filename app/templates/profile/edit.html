@@ -19,7 +19,7 @@
                 <div class="mb-4 text-center pb-4 border-bottom border-secondary border-opacity-25">
                     <label class="form-label d-block text-muted mb-3">Current Profile Avatar</label>
                     <div class="d-flex flex-column align-items-center gap-3">
-                        {% if profile.avatar_filename %}
+                        {% if profile.has_valid_avatar %}
                             <img src="{{ url_for('static', filename='uploads/avatars/' + profile.avatar_filename) }}"
                                  alt="Avatar" class="rounded-circle shadow border border-warning" style="width: 100px; height: 100px; object-fit: cover;">
                         {% else %}

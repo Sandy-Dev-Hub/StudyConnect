@@ -18,7 +18,7 @@
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-4" style="margin-top: -50px;">
                     <div class="d-flex flex-column flex-md-row align-items-md-end gap-4">
                         <!-- Avatar -->
-                        {% if profile and profile.avatar_filename %}
+                        {% if profile and profile.has_valid_avatar %}
                             <img src="{{ url_for('static', filename='uploads/avatars/' + profile.avatar_filename) }}"
                                  alt="{{ profile_user.username }}" class="rounded-circle shadow border border-3 border-dark flex-shrink-0"
                                  style="width: 120px; height: 120px; object-fit: cover; background: #111;" onerror="this.outerHTML = '<div class=\'profile-avatar shadow border border-3 border-dark flex-shrink-0 d-flex align-items-center justify-content-center\' style=\'width: 120px; height: 120px; font-size: 3rem; background-color: {{ profile_user.avatar_color }};\'><span class=\'text-white fw-bold\'>{{ profile_user.initials }}</span></div>';">

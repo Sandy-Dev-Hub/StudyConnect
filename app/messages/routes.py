@@ -67,7 +67,7 @@ def get_dm_history(user_id):
             'username': other.username,
             'initials': other.initials,
             'avatar_color': other.avatar_color,
-            'avatar_url': f"/static/uploads/avatars/{other.profile.avatar_filename}" if other.profile and other.profile.avatar_filename else None
+            'avatar_url': f"/static/uploads/avatars/{other.profile.avatar_filename}" if other.profile and other.profile.has_valid_avatar else None
         },
         'messages': messages
     })

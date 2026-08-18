@@ -2,7 +2,7 @@
     <div class="glass-card question-card animate-on-scroll">
         <div class="question-card-header">
             <div class="d-flex align-items-center">
-                {% if question.author.profile and question.author.profile.avatar_filename %}
+                {% if question.author.profile and question.author.profile.has_valid_avatar %}
                     <img src="{{ url_for('static', filename='uploads/avatars/' + question.author.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
                 {% else %}
                     <div class="avatar-sm flex-shrink-0" style="background-color: {{ question.author.avatar_color }}">

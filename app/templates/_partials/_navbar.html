@@ -164,7 +164,7 @@
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center justify-content-center p-0 user-avatar-toggle" href="#"
                            role="button" data-bs-toggle="dropdown" aria-label="User account menu">
-                            {% if current_user.profile and current_user.profile.avatar_filename %}
+                            {% if current_user.profile and current_user.profile.has_valid_avatar %}
                                 <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning nav-avatar-img" onerror="this.outerHTML = '<div class=\'nav-avatar\' style=\'background-color: {{ current_user.avatar_color }}\'>{{ current_user.initials }}</div>';">
                             {% else %}
                                 <div class="nav-avatar" style="background-color: {{ current_user.avatar_color }}">

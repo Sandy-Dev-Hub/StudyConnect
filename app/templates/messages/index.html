@@ -105,10 +105,26 @@
     }
     .mobile-chat-active .chat-main {
         display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin: 0 !important;
+    }
+    #chat-messages {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    #mobile-back-btn {
+        top: 12px !important;
+        left: 12px !important;
+        margin: 0 !important;
     }
 }
 #chat-header-avatar {
-    width: 60px; height: 60px;
+    width: 56px; height: 56px;
 }
 #chat-header-title {
     text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; font-size: 1.1rem;
@@ -144,7 +160,7 @@
                             <div id="conv-{{ c.other_user.id }}" class="sidebar-item p-3 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-10 {% if active_user and active_user.id == c.other_user.id %}active{% endif %}"
                                  data-type="dm" data-id="{{ c.other_user.id }}" data-username="{{ c.other_user.username }}">
                                 <div class="position-relative flex-shrink-0">
-                                    {% if c.other_user.profile and c.other_user.profile.avatar_filename %}
+                                    {% if c.other_user.profile and c.other_user.profile.has_valid_avatar %}
                                         <img src="{{ url_for('static', filename='uploads/avatars/' + c.other_user.profile.avatar_filename) }}" alt="Avatar" class="rounded-circle border border-warning" style="width: 36px; height: 36px; object-fit: cover;" onerror="this.outerHTML = '<div class=\'nav-avatar d-flex align-items-center justify-content-center\' style=\'width: 36px; height: 36px; font-size: 0.9rem; background-color: {{ c.other_user.avatar_color }};\'>{{ c.other_user.initials }}</div>';">
                                     {% else %}
                                         <div class="nav-avatar d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.9rem; background-color: {{ c.other_user.avatar_color }};">
@@ -201,7 +217,7 @@
                 <div class="col-md-8 col-lg-9 chat-main position-relative">
                     <!-- Header -->
                     <div id="chat-header" class="p-3 d-flex flex-column flex-md-row justify-content-md-start align-items-center position-relative">
-                        <button id="mobile-back-btn" class="btn btn-sm btn-link p-0 position-absolute top-0 start-0 m-3 d-md-none text-decoration-none" style="z-index: 10; color: #EA8528;">
+                        <button id="mobile-back-btn" class="btn btn-sm btn-link p-0 position-absolute d-md-none text-decoration-none" style="z-index: 10; color: #EA8528;">
                             <i class="bi bi-arrow-left fs-4"></i>
                         </button>
 
@@ -414,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.other_user.profile && data.other_user.profile.avatar_filename) {
                         avatarHtml = `<img src="/static/uploads/avatars/${data.other_user.profile.avatar_filename}" alt="Avatar" class="rounded-circle border border-warning w-100 h-100" style="object-fit: cover;">`;
                     } else {
-                        avatarHtml = `<div class="nav-avatar w-100 h-100 d-flex align-items-center justify-content-center text-white" style="background-color: ${data.other_user.avatar_color}; font-size: 1.5rem;">${data.other_user.initials}</div>`;
+                        avatarHtml = `<div class="nav-avatar w-100 h-100 d-flex align-items-center justify-content-center text-white" style="background-color: ${data.other_user.avatar_color}; font-size: 1.1rem;">${data.other_user.initials}</div>`;
                     }
                     
                     let isOnline = false;
@@ -423,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         isOnline = true;
                     }
                     const dotClass = isOnline ? 'online-dot' : 'offline-dot';
-                    avatarHtml += `<span class="online-status-dot ${dotClass} position-absolute rounded-circle" style="bottom: 0; right: 0; width: 16px; height: 16px; border: 2px solid #0d0d0d;" data-user-id="${data.other_user.id}"></span>`;
+                    avatarHtml += `<span class="online-status-dot ${dotClass} position-absolute rounded-circle" style="bottom: 0; right: 0; width: 12px; height: 12px; border: 2px solid #0d0d0d;" data-user-id="${data.other_user.id}"></span>`;
                     
                     avatarDiv.innerHTML = avatarHtml;
                 } else {
@@ -432,7 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     const avatarDiv = document.getElementById('chat-header-avatar');
                     avatarDiv.classList.remove('d-none');
-                    avatarDiv.innerHTML = `<div class="nav-avatar w-100 h-100 d-flex align-items-center justify-content-center text-white bg-secondary" style="font-size: 2rem;"><i class="bi bi-people-fill"></i></div>`;
+                    avatarDiv.innerHTML = `<div class="nav-avatar w-100 h-100 d-flex align-items-center justify-content-center text-white bg-secondary" style="font-size: 1.1rem;"><i class="bi bi-people-fill"></i></div>`;
                 }
 
                 messagesBox.innerHTML = '';

@@ -2,7 +2,8 @@
 {% block title %}Nearby Study Discovery — StudyConnect{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtz05qHqHqL8nQeZ7e3aWq1eKjX/xU0000000000000000000000000000000000==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
     .nearby-control-bar {
         background: rgba(255, 255, 255, 0.04);
@@ -287,8 +288,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"
-    integrity="sha512-BwHqxNdZVsyKmHW60xGgR1pQePE5sL/oX2HJoD0B+zT4A5QzP5sQ5T+9+O01X2wN+1Bv7E5g7E6B+2FkX1r1w==" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let map = null;
@@ -302,7 +303,7 @@
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const currentUserId = {{ current_user.id }};
-        const MAX_ACCURACY_METERS = 1000;
+        const MAX_ACCURACY_METERS = 5000;
 
         function logGpsDebug(message) {
             const el = document.getElementById('gps-debug');
@@ -354,7 +355,7 @@
         }
 
         function getMyAvatarMarkerHtml() {
-            {% if current_user.profile and current_user.profile.avatar_filename %}
+            {% if current_user.profile and current_user.profile.has_valid_avatar %}
                 return `<div class="custom-avatar-marker" style="background-image: url('{{ url_for('static', filename='uploads/avatars/' + current_user.profile.avatar_filename) }}'); border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div></div>`;
             {% else %}
                 return `<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: {{ current_user.avatar_color }}; border-color: #28a745; box-shadow: 0 0 15px #28a745;"><div class="marker-pulse" style="border-color: #28a745;"></div>{{ current_user.initials }}</div>`;
@@ -645,6 +646,8 @@
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
             }
+
+            setGpsSearchingState(null);
 
             logGpsDebug('calling watchPosition(geoOptions)');
             try {
@@ -947,8 +950,6 @@
                         </div>
                         <button class="btn btn-sm btn-outline-warning open-request-modal ms-2 flex-shrink-0" data-uid="${s.user_id}" data-uname="${s.username}" title="Send Study Request">
                             <i class="bi bi-send-fill"></i>
-                        </button>
-                    </div>`;
                         </button>
                     </div>`;
             }

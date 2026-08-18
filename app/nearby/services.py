@@ -133,10 +133,13 @@ class LocationService:
                 continue
 
             profile = u.profile
-            if has_request_context():
-                avatar_url = url_for('static', filename=f'uploads/avatars/{profile.avatar_filename}') if profile and profile.avatar_filename else None
+            if profile and profile.has_valid_avatar:
+                if has_request_context():
+                    avatar_url = url_for('static', filename=f'uploads/avatars/{profile.avatar_filename}')
+                else:
+                    avatar_url = f'/static/uploads/avatars/{profile.avatar_filename}'
             else:
-                avatar_url = f'/static/uploads/avatars/{profile.avatar_filename}' if profile and profile.avatar_filename else None
+                avatar_url = None
 
             nearby_data.append({
                 'user_id': u.id,

@@ -21,7 +21,7 @@ class Notification(db.Model):
 
     def to_dict(self):
         sender_name = self.sender.username if self.sender else 'StudyConnect'
-        sender_avatar = self.sender.profile.avatar_filename if (self.sender and hasattr(self.sender, 'profile') and self.sender.profile) else None
+        sender_avatar = self.sender.profile.avatar_filename if (self.sender and hasattr(self.sender, 'profile') and self.sender.profile and self.sender.profile.has_valid_avatar) else None
         
         # Calculate human readable time
         now = datetime.now(timezone.utc)

@@ -66,7 +66,7 @@ class Message(db.Model):
             'sender_username': self.sender.username,
             'sender_initials': self.sender.initials,
             'sender_avatar_color': self.sender.avatar_color,
-            'sender_avatar_url': f"/static/uploads/avatars/{self.sender.profile.avatar_filename}" if self.sender.profile and self.sender.profile.avatar_filename else None,
+            'sender_avatar_url': f"/static/uploads/avatars/{self.sender.profile.avatar_filename}" if self.sender.profile and self.sender.profile.has_valid_avatar else None,
             'body': self.body,
             'message_type': self.message_type,
             'attachment_filename': self.attachment_filename,
