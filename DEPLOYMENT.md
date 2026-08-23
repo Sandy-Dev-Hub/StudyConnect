@@ -1,6 +1,6 @@
 # 🚀 StudyConnect v1.0 Production Deployment Guide
 
-This document outlines the step-by-step instructions for deploying **StudyConnect v1.0** to production environments. StudyConnect is built on a modern, highly scalable architecture featuring **Python 3.11+ / Flask**, **SQLAlchemy 2.0**, **Neon Managed PostgreSQL**, **Redis Caching**, and **Flask-SocketIO real-time WebSockets**.
+This document outlines the step-by-step instructions for deploying **StudyConnect v1.0** to production environments. StudyConnect is built on a modern, highly scalable architecture featuring **Python 3.11+ / Flask**, **SQLAlchemy 2.0**, **Supabase Managed PostgreSQL**, **Redis Caching**, and **Flask-SocketIO real-time WebSockets**.
 
 ---
 
@@ -16,11 +16,11 @@ This document outlines the step-by-step instructions for deploying **StudyConnec
 [ Gunicorn + Gevent Workers ] ──► [ Redis 7 Cache & Pub/Sub ]
              │
              ▼
-[ Neon Cloud PostgreSQL (Serverless) ]
+[ Supabase Cloud PostgreSQL ]
 ```
 
 ### Key Architectural Guidelines
-1. **Managed Database**: Do not run local PostgreSQL instances in containers. Connect directly to **Neon Managed Cloud PostgreSQL** (`postgresql://...`) via environment variables.
+1. **Managed Database**: Do not run local PostgreSQL instances in containers. Connect directly to **Supabase Managed Cloud PostgreSQL** (`postgresql://...`) via environment variables.
 2. **Real-Time WebSockets**: Gunicorn must use the **Gevent** worker class (`worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"`) to handle concurrent WebSockets and background tasks cleanly.
 3. **Caching & Notification Queues**: Redis (`redis://...`) stores 5-minute leaderboards, analytics memoization, live search queries, and Socket.IO Pub/Sub messaging.
 
@@ -35,7 +35,7 @@ Configure these environment variables in your deployment platform:
 | `FLASK_APP` | Yes | `run.py` | Entrypoint file for Flask |
 | `FLASK_ENV` | Yes | `production` | Production environment flag |
 | `SECRET_KEY` | Yes | *64-char hex string* | Cryptographic signing key for sessions/tokens |
-| `DATABASE_URL` | Yes | `postgresql://user:pass@ep-host.neon.tech/neondb` | Neon PostgreSQL Serverless Connection URI |
+| `DATABASE_URL` | Yes | `postgresql://postgres:pass@db.xyz.supabase.co:5432/postgres` | Supabase PostgreSQL Connection URI |
 | `REDIS_URL` | Yes | `redis://redis-host:6379/0` | Redis caching & WebSocket adapter URL |
 | `GUNICORN_WORKERS` | No | `4` | Number of worker processes |
 | `MAIL_SERVER` | Optional | `smtp.gmail.com` | SMTP host for email notifications |
@@ -59,7 +59,7 @@ cat <<EOF > .env
 FLASK_APP=run.py
 FLASK_ENV=production
 SECRET_KEY=$(openssl rand -hex 32)
-DATABASE_URL=postgresql://neondb_owner:password@ep-example.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://postgres:password@db.xyz.supabase.co:5432/postgres
 EOF
 ```
 
@@ -96,13 +96,13 @@ curl http://localhost:5000/api/health
 ### Render.com Setup
 1. Create a new **Web Service** connected to your GitHub repository.
 2. Select **Docker** as the Runtime.
-3. In the Environment section, add your `DATABASE_URL` (Neon PostgreSQL) and `REDIS_URL` (Render Redis instance).
+3. In the Environment section, add your `DATABASE_URL` (Supabase PostgreSQL) and `REDIS_URL` (Render Redis instance).
 4. Set the Health Check Path to `/api/health`.
 
 ### Railway.app Setup
 1. Create a new Project and deploy from GitHub repo.
 2. Add a **Redis** service within the Railway canvas.
-3. In your Web app service variables, reference `${{Redis.REDIS_URL}}` and set `DATABASE_URL` to your Neon PostgreSQL connection string.
+3. In your Web app service variables, reference `${{Redis.REDIS_URL}}` and set `DATABASE_URL` to your Supabase PostgreSQL connection string.
 
 ---
 

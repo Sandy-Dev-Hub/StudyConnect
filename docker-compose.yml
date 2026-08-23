@@ -13,8 +13,8 @@ services:
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=production
-      # Neon Managed PostgreSQL connection (must be provided via environment or .env file)
-      - DATABASE_URL=${DATABASE_URL:-postgresql://neondb_owner:password@ep-example.aws.neon.tech/neondb?sslmode=require}
+      # Supabase Managed PostgreSQL connection (must be provided via environment or .env file)
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@db.xyz.supabase.co:5432/postgres}
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY:-change_me_in_production_environment}
       - GUNICORN_WORKERS=4

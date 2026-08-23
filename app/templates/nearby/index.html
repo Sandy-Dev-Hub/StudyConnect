@@ -2,8 +2,7 @@
 {% block title %}Nearby Study Discovery — StudyConnect{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <style>
     .nearby-control-bar {
         background: rgba(255, 255, 255, 0.04);
@@ -86,16 +85,58 @@
         }
     }
 
-    .leaflet-popup-content-wrapper {
+    /* MapLibre popup styling */
+    .maplibregl-popup-content {
         background: #1a1a19;
         color: #fff;
         border: 1px solid rgba(234, 133, 40, 0.4);
         border-radius: 0.75rem;
+        padding: 10px 12px;
+        font-family: inherit;
+        font-size: 0.9rem;
     }
-
-    .leaflet-popup-tip {
-        background: #1a1a19;
+    .maplibregl-popup-tip {
+        border-top-color: #1a1a19;
+        border-bottom-color: #1a1a19;
     }
+    .maplibregl-popup-close-button {
+        color: #aaa;
+        font-size: 1.1rem;
+        padding: 2px 6px;
+    }
+    .maplibregl-popup-close-button:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.1);
+        border-radius: 4px;
+    }
+    /* Style selector overlay */
+    .map-style-select {
+        background: rgba(26,26,25,0.92);
+        color: #f0f0f0;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 0.5rem;
+        padding: 5px 8px;
+        font-size: 0.82rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+        cursor: pointer;
+        outline: none;
+        backdrop-filter: blur(8px);
+    }
+    .map-style-select:hover, .map-style-select:focus {
+        border-color: rgba(234, 133, 40, 0.6);
+    }
+    .maplibregl-ctrl-group {
+        background: #1a1a19 !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+    }
+    .maplibregl-ctrl-group button {
+        background-color: #1a1a19 !important;
+        color: #EA8528 !important;
+    }
+    .maplibregl-ctrl-group button:hover {
+        background-color: rgba(234,133,40,0.15) !important;
+    }
+    .maplibregl-ctrl-icon { filter: invert(1); }
 
     /* ── GPS Searching state dot animation ─────────────────── */
     @keyframes searching-pulse {
@@ -206,12 +247,20 @@
 
     <!-- Main Grid: Map & List -->
     <div class="row g-4">
-        <!-- Leaflet Map Col -->
+        <!-- MapLibre Map Col -->
         <div class="col-lg-8">
             <div class="map-container glass-card">
                 <div id="mapLoader" class="position-absolute top-50 start-50 translate-middle text-center z-3 d-none">
                     <img src="{{ url_for('static', filename='img/logo/logo-icon.svg') }}" class="logo-loader" alt="StudyConnect">
                     <p class="mt-2 text-muted fw-semibold">Locating nearby students...</p>
+                </div>
+                <!-- Style Selector Overlay -->
+                <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+                    <select id="mapStyleSelect" class="map-style-select">
+                        <option value="default">🗺️ Default (Carto)</option>
+                        <option value="openstreetmap">🌍 OpenStreetMap</option>
+                        <option value="openstreetmap3d">🏙️ OpenStreetMap 3D</option>
+                    </select>
                 </div>
                 <div id="nearbyMap" style="width: 100%; height: 100%;"></div>
             </div>
@@ -288,8 +337,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let map = null;
@@ -304,6 +352,14 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const currentUserId = {{ current_user.id }};
         const MAX_ACCURACY_METERS = 5000;
+
+        // Map style definitions (matching the React component you provided)
+        const MAP_STYLES = {
+            default: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+            openstreetmap: 'https://tiles.openfreemap.org/styles/bright',
+            openstreetmap3d: 'https://tiles.openfreemap.org/styles/liberty'
+        };
+        let currentStyleKey = 'default';
 
         function logGpsDebug(message) {
             const el = document.getElementById('gps-debug');
@@ -362,76 +418,110 @@
             {% endif %}
         }
 
-        // Initialize Leaflet Map
+        // Initialize MapLibre GL Map
         function initMap() {
             try {
                 const hasInitialLocation = isSharing && myLat !== null && myLng !== null;
-                const initialLat = hasInitialLocation ? myLat : 20.0;
                 const initialLng = hasInitialLocation ? myLng : 0.0;
+                const initialLat = hasInitialLocation ? myLat : 20.0;
                 const initialZoom = hasInitialLocation ? 15 : 2;
 
-                map = L.map('nearbyMap', {
-                    zoomControl: false,
-                    fadeAnimation: true,
-                    zoomAnimation: true
-                }).setView([initialLat, initialLng], initialZoom);
+                map = new maplibregl.Map({
+                    container: 'nearbyMap',
+                    style: MAP_STYLES.default,
+                    center: [initialLng, initialLat], // MapLibre uses [lng, lat]
+                    zoom: initialZoom,
+                    pitch: 0,
+                    attributionControl: false
+                });
 
-                L.control.zoom({ position: 'bottomright' }).addTo(map);
+                // Attribution
+                map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+
+                // Zoom control
+                map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
                 // Custom Recenter Control
-                const RecenterControl = L.Control.extend({
-                    options: { position: 'bottomright' },
-                    onAdd: function() {
-                        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                        const btn = L.DomUtil.create('a', '', container);
-                        btn.href = '#';
+                class RecenterControl {
+                    onAdd(mapInstance) {
+                        this._map = mapInstance;
+                        this._container = document.createElement('div');
+                        this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+                        this._container.style.marginBottom = '6px';
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
                         btn.title = 'Center on My Location';
-                        btn.role = 'button';
                         btn.style.width = '30px';
                         btn.style.height = '30px';
-                        btn.style.lineHeight = '30px';
-                        btn.style.textAlign = 'center';
-                        btn.style.backgroundColor = '#1a1a19';
-                        btn.style.color = '#EA8528';
-                        btn.style.borderColor = 'rgba(255,255,255,0.2)';
-                        btn.innerHTML = '<i class="bi bi-crosshair"></i>';
-
-                        L.DomEvent.disableClickPropagation(container);
-                        L.DomEvent.on(btn, 'click', (e) => {
-                            L.DomEvent.preventDefault(e);
+                        btn.style.display = 'flex';
+                        btn.style.alignItems = 'center';
+                        btn.style.justifyContent = 'center';
+                        btn.style.cursor = 'pointer';
+                        btn.innerHTML = '<i class="bi bi-crosshair" style="color:#EA8528;font-size:1rem;"></i>';
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
                             if (myLat !== null && myLng !== null && isSharing) {
-                                map.setView([myLat, myLng], 16, { animate: true });
+                                map.flyTo({ center: [myLng, myLat], zoom: 16, duration: 600 });
                             } else {
                                 showToast('info', 'Location Needed', 'Please click "Share Location" to acquire high-accuracy GPS position.');
                             }
                         });
-                        return container;
+                        this._container.appendChild(btn);
+                        return this._container;
                     }
-                });
-                map.addControl(new RecenterControl());
+                    onRemove() {
+                        this._container.parentNode.removeChild(this._container);
+                        this._map = undefined;
+                    }
+                }
+                map.addControl(new RecenterControl(), 'bottom-right');
 
-                // CartoDB Dark Matter Tiles
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                    subdomains: 'abcd',
-                    maxZoom: 19
-                }).addTo(map);
-
-                // Smooth map sizing on mobile & desktop
-                setTimeout(() => { if (map) map.invalidateSize(); }, 200);
-                setTimeout(() => { if (map) map.invalidateSize(); }, 800);
-                window.addEventListener('resize', () => {
-                    if (map) map.invalidateSize();
-                });
-
-                if (hasInitialLocation) {
-                    hasCenteredMap = true;
-                    updateUserMarker(myLat, myLng, null);
-                    fetchNearbyStudents();
-                    startLiveLocationTracking();
+                // Style Selector — listens to the dropdown in the HTML overlay
+                const styleSelect = document.getElementById('mapStyleSelect');
+                if (styleSelect) {
+                    styleSelect.addEventListener('change', () => {
+                        const key = styleSelect.value;
+                        currentStyleKey = key;
+                        // Changing style removes all markers — we'll re-add them after load
+                        map.once('styledata', () => {
+                            // Re-render user marker
+                            if (myLat !== null && myLng !== null && isSharing) {
+                                if (myMarker) { myMarker.remove(); myMarker = null; }
+                                updateUserMarker(myLat, myLng, null);
+                            }
+                            // Re-render peer markers
+                            const savedMarkers = { ...peerMarkers };
+                            peerMarkers = {};
+                            if (isSharing) fetchNearbyStudents();
+                        });
+                        map.setStyle(MAP_STYLES[key]);
+                        // Pitch control: 3D = 60deg, others = 0
+                        map.easeTo({ pitch: key === 'openstreetmap3d' ? 60 : 0, duration: 500 });
+                    });
                 }
 
-                updateSharingUI(isSharing, expiresAt);
+                // Smooth map sizing on mobile & desktop
+                setTimeout(() => { if (map) map.resize(); }, 200);
+                setTimeout(() => { if (map) map.resize(); }, 800);
+                window.addEventListener('resize', () => {
+                    if (map) map.resize();
+                });
+
+                map.on('load', () => {
+                    if (hasInitialLocation) {
+                        hasCenteredMap = true;
+                        updateUserMarker(myLat, myLng, null);
+                        fetchNearbyStudents();
+                        startLiveLocationTracking();
+                    }
+                    updateSharingUI(isSharing, expiresAt);
+                });
+
+                // If no initial location, still update UI
+                if (!hasInitialLocation) {
+                    updateSharingUI(isSharing, expiresAt);
+                }
+
             } catch (err) {
                 console.error('[MAP INIT ERROR]', err);
                 updateSharingUI(isSharing, expiresAt);
@@ -446,18 +536,22 @@
             const popupContent = `<b>You</b><br>Live GPS Location.${accuracyText}`;
 
             if (!myMarker) {
-                const myIcon = L.divIcon({
-                    className: '',
-                    html: getMyAvatarMarkerHtml(),
-                    iconSize: [44, 44],
-                    iconAnchor: [22, 22]
-                });
-                myMarker = L.marker([lat, lng], { icon: myIcon }).addTo(map);
-                myMarker.bindPopup(popupContent);
+                // Create a DOM element for the custom avatar marker
+                const el = document.createElement('div');
+                el.style.cssText = 'width:44px;height:44px;';
+                el.innerHTML = getMyAvatarMarkerHtml();
+
+                const popup = new maplibregl.Popup({ offset: 22, closeButton: true })
+                    .setHTML(popupContent);
+
+                myMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+                    .setLngLat([lng, lat])  // MapLibre: [lng, lat]
+                    .setPopup(popup)
+                    .addTo(map);
             } else {
-                myMarker.setLatLng([lat, lng]);
+                myMarker.setLngLat([lng, lat]);
                 if (myMarker.getPopup()) {
-                    myMarker.getPopup().setContent(popupContent);
+                    myMarker.getPopup().setHTML(popupContent);
                 }
             }
         }
@@ -478,7 +572,7 @@
             socket.off('location_stopped');
             socket.on('location_stopped', (data) => {
                 if (peerMarkers[data.user_id]) {
-                    map.removeLayer(peerMarkers[data.user_id]);
+                    peerMarkers[data.user_id].remove(); // MapLibre marker .remove()
                     delete peerMarkers[data.user_id];
                 }
                 if (isSharing) fetchNearbyStudents();
@@ -539,7 +633,7 @@
                     actionBtn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Share Location';
                 }
 
-                if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
+                if (myMarker) { myMarker.remove(); myMarker = null; }
                 clearPeerMarkers();
                 document.getElementById('studentsList').innerHTML = `
                     <div class="text-center text-muted py-5 my-auto">
@@ -553,7 +647,7 @@
 
         function clearPeerMarkers() {
             for (let uid in peerMarkers) {
-                map.removeLayer(peerMarkers[uid]);
+                peerMarkers[uid].remove(); // MapLibre marker .remove()
             }
             peerMarkers = {};
         }
@@ -679,7 +773,7 @@
 
                     // Initial map centering ONCE on first valid GPS fix
                     if (!hasCenteredMap && map) {
-                        map.setView([myLat, myLng], 15, { animate: true });
+                        map.flyTo({ center: [myLng, myLat], zoom: 15, duration: 800 }); // MapLibre: [lng, lat]
                         hasCenteredMap = true;
                     }
 
@@ -865,7 +959,7 @@
             // Remove markers for students no longer active/in radius
             for (let uid in peerMarkers) {
                 if (!activeUids.has(parseInt(uid))) {
-                    map.removeLayer(peerMarkers[uid]);
+                    peerMarkers[uid].remove(); // MapLibre marker .remove()
                     delete peerMarkers[uid];
                 }
             }
@@ -882,7 +976,7 @@
                     </div>`;
                 return;
             }
-            
+
             const getIconHtml = (s) => new Promise(resolve => {
                 if (!s.avatar_url) {
                     resolve(`<div class="custom-avatar-marker d-flex align-items-center justify-content-center text-white fw-bold" style="background-color: ${s.avatar_color}; border-color: var(--accent);"><div class="marker-pulse"></div>${s.initials}</div>`);
@@ -898,7 +992,7 @@
             // Using a for...of loop to support async/await sequentially
             for (const s of students) {
                 const iconHtml = await getIconHtml(s);
-                
+
                 const fallbackPopup = `<div class="nav-avatar mx-auto mb-2" style="background-color: ${s.avatar_color}; width: 48px; height: 48px; font-size: 1.2rem; color: #fff;">${s.initials}</div>`;
                 let popupAvatar = s.avatar_url
                     ? `<img src="${s.avatar_url}" class="rounded-circle mb-2" width="48" height="48" style="object-fit: cover;" onerror="this.outerHTML = '${fallbackPopup}'">`
@@ -919,14 +1013,25 @@
                 const offsetLng = s.lng + (Math.floor(hash / 10) - 5) * 0.00005;
 
                 if (peerMarkers[s.user_id]) {
-                    peerMarkers[s.user_id].setLatLng([offsetLat, offsetLng]);
+                    // Update existing MapLibre marker position
+                    peerMarkers[s.user_id].setLngLat([offsetLng, offsetLat]);
                     if (peerMarkers[s.user_id].getPopup()) {
-                        peerMarkers[s.user_id].getPopup().setContent(popupHtml);
+                        peerMarkers[s.user_id].getPopup().setHTML(popupHtml);
                     }
                 } else {
-                    const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [44, 44], iconAnchor: [22, 22] });
-                    const marker = L.marker([offsetLat, offsetLng], { icon }).addTo(map);
-                    marker.bindPopup(popupHtml);
+                    // Create new MapLibre marker with custom DOM element
+                    const el = document.createElement('div');
+                    el.style.cssText = 'width:44px;height:44px;cursor:pointer;';
+                    el.innerHTML = iconHtml;
+
+                    const popup = new maplibregl.Popup({ offset: 22, closeButton: true })
+                        .setHTML(popupHtml);
+
+                    const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+                        .setLngLat([offsetLng, offsetLat]) // MapLibre: [lng, lat]
+                        .setPopup(popup)
+                        .addTo(map);
+
                     peerMarkers[s.user_id] = marker;
                 }
 
