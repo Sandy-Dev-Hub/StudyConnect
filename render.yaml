@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: studyconnect
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: FLASK_APP
+        value: run.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        # Set this manually in the Render dashboard to your Supabase Session
+        # Pooler connection string with the pg8000 dialect prefix:
+        # postgresql+pg8000://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: studyconnect-redis
+          property: connectionString
+      - key: GUNICORN_WORKERS
+        value: 1
+      - key: GUNICORN_TIMEOUT
+        value: 120
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: 1
+      - key: MAIL_SUPPRESS_SEND
+        value: 0
+      - key: MAIL_USERNAME
+        # Set manually in the Render dashboard — your Gmail address
+        sync: false
+      - key: MAIL_PASSWORD
+        # Set manually in the Render dashboard — your Gmail App Password
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        # Optional — defaults to StudyConnect <MAIL_USERNAME> if not set
+        sync: false
+      - key: AUTO_VERIFY_USERS
+        value: 0
+
+  - type: keyvalue
+    name: studyconnect-redis
+    plan: free
+    # ipAllowList: [] means no public internet access.
+    # Internal Render service-to-service access (REDIS_URL) is unaffected.
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru

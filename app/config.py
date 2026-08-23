@@ -9,12 +9,8 @@ class Config:
     """Base configuration."""
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-    }
 
-    # Database
+    # Database — build and rewrite URL to pg8000 dialect before anything else
     _db_url = os.environ.get('DATABASE_URL', '').strip()
     if _db_url.startswith('postgres://'):
         _db_url = _db_url.replace('postgres://', 'postgresql+pg8000://', 1)
@@ -23,6 +19,19 @@ class Config:
     if _db_url.startswith('postgresql+psycopg://'):
         _db_url = _db_url.replace('postgresql+psycopg://', 'postgresql+pg8000://', 1)
     SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///studyconnect.db'
+
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
+    # pg8000 ignores sslmode in the connection URL (unlike psycopg2, which
+    # auto-negotiates). Supabase and most cloud Postgres hosts require SSL.
+    # We must pass ssl_context=True via connect_args whenever pg8000 is in use
+    # so the driver opens a TLS connection. This is a no-op for the SQLite
+    # dev fallback (which doesn't reach this branch).
+    if _db_url.startswith('postgresql+pg8000://'):
+        SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = {'ssl_context': True}
+
 
     # Mail / Brevo API
     BREVO_API_KEY = os.environ.get('BREVO_API_KEY')

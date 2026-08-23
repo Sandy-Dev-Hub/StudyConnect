@@ -31,6 +31,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    libjpeg62-turbo \
+    zlib1g \
+    libwebp7 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -50,7 +53,7 @@ RUN mkdir -p app/static/uploads instance && chown -R studyconnect:studyconnect a
 
 USER studyconnect
 
-EXPOSE 8080
+EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT}/api/health || exit 1

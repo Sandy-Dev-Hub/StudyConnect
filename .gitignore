@@ -21,8 +21,8 @@ venv/
 app/static/uploads/*
 !app/static/uploads/.gitkeep
 
-# Migrations — generated; exclude from source control if preferred
-migrations/
+# Migrations — committed to source control so Docker builds on Render include them
+# migrations/
 
 # Instance folder (Flask instance config)
 instance/
